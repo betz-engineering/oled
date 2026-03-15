@@ -102,9 +102,9 @@ void send_window_4(unsigned x1, unsigned y1, unsigned x2, unsigned y2, uint8_t *
     send_data(y2);
 
     send_cmd(0x5C);  // write VRAM
-    for (int row = y1; row <= y2; row++) {
+    for (unsigned row = y1; row <= y2; row++) {
         uint8_t *p = &data[row * DISPLAY_WIDTH / 2 + x1 * 2];
-        for (int column = x1; column <= x2; column++) {
+        for (unsigned column = x1; column <= x2; column++) {
             // Each column contains 4 pixels = 2 bytes
             send_data(*p++);
             send_data(*p++);
