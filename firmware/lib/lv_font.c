@@ -339,7 +339,7 @@ void set_bb(int x0, int x1, int y0, int y1)
     bb_y1 = y1;
 }
 
-void reset_bb()
+void reset_bb(void)
 {
     bb_x0=0;
     bb_x1=DISPLAY_WIDTH;

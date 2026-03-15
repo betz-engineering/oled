@@ -1,8 +1,6 @@
 #include "ui_board.h"
-#include "gpio.h"
-#include "settings.h"
 #include "ssd1322.h"
-#include <hardware_interface.h>
+#include "hardware_interface.h"
 #include <stdint.h>
 
 // Bit 1, 2 and 3 of MCP23_OPCODE_W encode the hardware address (strapping pins)
