@@ -17,7 +17,7 @@ module system_top (
     output           UI_COPI,
     input            UI_CIPO,
     output           UI_SCK,
-    inout            UI_IO_INT,
+    input            UI_IO_INT,
     output           UI_IO_RSTN,
     output           UI_IO_CSN,
     output           UI_OLED_DC
@@ -67,13 +67,17 @@ system #(
     .spi_cipo    (UI_CIPO),
 
     .gpio_z      ({
-        LEDS[1:0], LED_B, LED_G, LED_R,
+        LEDS[1:0], LED_B, 1'b0, 1'b0,
         UI_OLED_CSN,
-        UI_IO_INT,
+        1'b0,
         UI_IO_RSTN,
         UI_IO_CSN,
         UI_OLED_DC
-    })
+    }),
+    .irq_mcp23  (UI_IO_INT)
 );
+
+assign LED_R = ~trap;
+assign LED_G = ~UI_IO_INT;
 
 endmodule

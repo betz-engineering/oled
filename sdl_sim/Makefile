@@ -1,4 +1,4 @@
-include ../../bedrock/dir_list.mk
+include ../../Bedrock/dir_list.mk
 
 vpath %.c ../firmware
 vpath %.c ../firmware/lib
@@ -9,7 +9,7 @@ GIT_VERSION = $(shell git describe --abbrev=4 --dirty --always --tags)
 LDLIBS = -lSDL2
 CFLAGS += -I../firmware -I../firmware/lib -I$(PICORV_DIR)/firmware/inc
 CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\" -DSDL_SIM -g
-OBJS = frame_buffer.o lv_font.o print.o aa_line.o demo.o fast_sin.o
+OBJS = frame_buffer.o lv_font.o print.o demo.o gui.o
 OBJS += lv_font_roboto_12.o lv_font_roboto_mono_17.o lv_font_fa.o
 
 all: test

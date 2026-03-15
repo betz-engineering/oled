@@ -64,6 +64,7 @@ module system_tb;
         .uart_tx0   (uart_tx0   ),
         .uart_rx0   (uart_rx0   ),
         .gpio_z     (gpio_z     ),
+        .irq_mcp23  (0),
         .trap       (trap       ),
 
         // SPI for OLED

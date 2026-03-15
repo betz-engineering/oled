@@ -7,24 +7,19 @@
 // Dirty GUI stuff
 //-----------------------------------------------
 // Horizontal alignment
-typedef enum {
-	LV_LEFT,
-	LV_CENTER,
-	LV_RIGHT,
-	LV_RIGHT_REF_LEFT
-} t_align;
+typedef enum { LV_LEFT, LV_CENTER, LV_RIGHT, LV_RIGHT_REF_LEFT } t_align;
 
 typedef struct {
-	// text origin
-	int16_t x;
-	int16_t y;
-	// clip window
-	int16_t x0;
-	int16_t y0;
-	int16_t x1;
-	int16_t y1;
-	t_align align;
-	lv_font_t *fnt;
+    // text origin
+    int16_t x;
+    int16_t y;
+    // clip window
+    int16_t x0;
+    int16_t y0;
+    int16_t x1;
+    int16_t y1;
+    t_align align;
+    lv_font_t *fnt;
 } t_label;
 
 // Initialize a `label`, which has a fixed bounding box (the area which is
@@ -36,11 +31,15 @@ typedef struct {
 // init:    a string to determine width of the bounding box
 // a:       text alignment __AND__ anchor point position
 // draw:    if true, also draw the init string to the framebuffer
-void lv_init_label(t_label *lbl, int x, int y, lv_font_t *fnt, const char *init, t_align a, bool draw);
+void lv_init_label(
+    t_label *lbl, int x, int y, lv_font_t *fnt, const char *init, t_align a, bool draw);
 
 // Update the text in a label
 // void lv_update_label(t_label *lbl, const char *format, ...);  // printf-like version
 void lv_update_label(t_label *lbl, const char *buf);
+
+// call it like printf
+// void lv_update_labelf(t_label *lbl, const char *format, ...);
 
 // Update the text in a label with a fixed point fractional number
 void lv_update_label_fix(t_label *lbl, int32_t val, const uint8_t nFract, uint8_t nDigits);
@@ -51,10 +50,20 @@ void lv_update_label_dp(t_label *lbl, int32_t val, const uint8_t n, const uint8_
 // Update the text in a label with a n-digit number in hex format
 void lv_update_label_hex(t_label *lbl, int32_t val, uint8_t nDigits);
 
+// Update the text in a label with a n-digit number in binary format
+void lv_update_label_bin(t_label *lbl, uint32_t val, uint8_t nDigits);
+
 // Draw string at cursor
 void lv_print(const char *str);
 
 // Draw a border around the element
 void lv_border(t_label *lbl);
+
+// Convenience shortcut to initialize 3 labels:
+// <a: static label><b: dynamic number><c: static unit>
+// use `lv_update_label(nmb, ...)` to update the dynamic number in the middle
+// x, y:    position of anchor point on the top left
+void lv_triple(
+    t_label *nmb, int x, int y, lv_font_t *fnt, const char *a, const char *b, const char *c);
 
 #endif

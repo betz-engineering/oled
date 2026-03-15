@@ -21,6 +21,8 @@ module system #(
     // GPIO
     inout  [31:0]       gpio_z,
 
+    input               irq_mcp23,
+
     output              spi_cs,
     output              spi_sck,
     output              spi_copi,
@@ -42,6 +44,8 @@ localparam IRQ_EBREAK = 8'h01;
 localparam IRQ_BUSERR = 8'h02;
 // Triggers when byte received. Cleared when byte read from UART_RX_REG
 localparam IRQ_UART0_RX = 8'h03;
+// Triggered on MCP23 IO pin change. Cleared on GPIO register read
+localparam IRQ_MCP23 = 8'h4;
 
 // --------------------------------------------------------------
 //  Highest byte of the memory address selects peripherals
@@ -74,7 +78,10 @@ wire [68:0] packed_cpu_fwd;
 wire [32:0] packed_cpu_ret;
 
 assign irqFlags[2:0] = 0;
-assign irqFlags[31:4]= 0;
+// irqFlags[3] = irq_uart0_rx;
+assign irqFlags[IRQ_MCP23] = irq_mcp23;
+assign irqFlags[6:5]= 0;
+assign irqFlags[31:8] = 0;
 
 pico_pack cpu_inst (
     .clk           ( clk            ),

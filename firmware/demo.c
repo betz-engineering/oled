@@ -1,91 +1,86 @@
-#include <stdlib.h>
-#include "frame_buffer.h"
-#include "aa_line.h"
-#include "lv_font.h"
-#include "fast_sin.h"
-#include "print.h"
-#include "lv_symbols.h"
-#include "ui_board.h"
 #include "demo.h"
+#include "frame_buffer.h"
+#include "gui.h"
+#include "lib/gui.h"
+#include "lv_font.h"
+#include "lv_symbols.h"
+#include "print.h"
+#include "ssd1322.h"
+#include "ui_board.h"
+#include <stdlib.h>
 
 extern lv_font_t lv_font_roboto_12, lv_font_roboto_mono_17, lv_font_fa;
 
-void _putchar(char c)
-{
-	// hook for all print_* functions
-	draw_char(c);
-}
+#define N_SYMBOLS 6
+static const char *all_symbols[] = {
+    THERMOMETER_FULL, BOLT, PLUG, MICROCHIP, BROADCAST_TOWER, UNLOCK_ALT};
 
-static int RAND_AB(int a, int b)
-{
-	return (rand() % (b + 1 - a) + a);
-}
+void demo(void) {
+    static bool is_inverted = false, is_left_led = true;
+    static unsigned frm = 0, leda = 0, ledb = 0, ios_d = 1;
+    static int ticks_d = 0;
+    static t_label l_ticks, l_io, l_leda, l_ledb, l_symbol;
 
-void demo(unsigned btns)
-{
-	static unsigned frm = 0;
-	static int alpha = 0;
-	static unsigned n_lines=4, x=128, y=32;
-	static uint8_t led = 0;
-	static unsigned isBtn;
-	int dx = 0, dy = 0;
+    int enc = get_encoder_ticks(false);  // returns absolute encoder position
+    unsigned btns = get_button_flags();  // returns state of encoder and back button
 
-	fill(0);
+    if (frm == 0) {
+        lv_init_label(&l_leda, 0, 24, &lv_font_roboto_mono_17, "0", LV_LEFT, true);
+        lv_init_label(&l_ledb, 15, 24, &lv_font_roboto_mono_17, "0", LV_LEFT, true);
+        lv_triple(&l_ticks, 32, 16, &lv_font_roboto_mono_17, "Enc:", "-1000", "ticks");
+        lv_triple(&l_io, 32, 34, &lv_font_roboto_12, "IO:", "0000000000000000", "");
+        lv_init_label(&l_symbol, 230, 10, &lv_font_fa, BROADCAST_TOWER, LV_CENTER, true);
+    }
 
-	// Radial lines
-	if (frm % 400 == 0) {
-		n_lines = RAND_AB(2, 9);  // number of lines
-		x = RAND_AB(4, DISPLAY_WIDTH - 5);  // center point
-		y = RAND_AB(1, DISPLAY_HEIGHT - 2);
-	}
-	for (unsigned i=0; i<n_lines; i++) {
-		dx = get_cos(alpha + 32767 * i / n_lines) * DISPLAY_WIDTH / 32768;
-		dy = get_sin(alpha + 32767 * i / n_lines) * DISPLAY_WIDTH / 32768;
-		drawLine(x, y, x + dx, y + dy);
-	}
+    int ticks = get_encoder_ticks(false);
+    int diff = ticks - ticks_d;
 
-	isBtn |= btns & 3;
-	if (isBtn == 0)
-		alpha += 30;
+    if (diff != 0) {
+        lv_update_label_dp(&l_ticks, ticks, 3, 0);
 
-	// Show some text + custom symbols
-	set_cursor(1, 4);
-	set_font(&lv_font_roboto_mono_17);
-	print_str(RESISTOR " Hallo Welt ");
-	if (led & 3)
-		print_str(SWITCH_CLOSED "\n");
-	else
-		print_str(SWITCH_OPEN "\n");
+        // Symbols show-case
+        lv_update_label(&l_symbol, all_symbols[abs(ticks) % N_SYMBOLS]);
 
-	// Show more text in smaller font
-	set_font(&lv_font_roboto_12);
-	set_cursor(1, 32);
-	print_str("Franz jagt im komplett verwahr-\nlosten Taxi quer durch Bayern.");
+        // Greyscale bar at the bottom
+        for (int x = 0; x < DISPLAY_WIDTH; x += 8)
+            fillRect(x, 55, x + 7, 63, (x / 8 + ticks) & 0xF);
 
-	// flash something on encoder events
-	set_font(&lv_font_roboto_mono_17);
-	set_cursor(180, 40);
-	if (btns & (1 << 0)) {  // left
-		print_str(CHEVRON_DOWN);
-		alpha -= 1024;
-	} else if (btns & (1 << 1)) {  // right
-		print_str(CHEVRON_UP);
-		alpha += 1024;
-	} else if (btns & (1 << 2)) {  // push
-		print_str(CHECK_CIRCLE);
-		led += 1;
-		setLed(led);
-	}
+        if (is_left_led) {
+            leda = (leda + diff) & 0x7;
+        } else {
+            ledb = (ledb + diff) & 0x7;
+        }
+    }
 
-	// frame counter
-	set_cursor(190, 4);
-	print_dec(frm);
+    unsigned ios = get_gpios();
+    if (ios != ios_d) {
+        lv_update_label_bin(&l_io, ios, 16);
+        ios_d = ios;
+    }
 
-	// cycle all included large symbols
-	const char *symbols[] = {THERMOMETER_FULL, BOLT, PLUG, MICROCHIP, BROADCAST_TOWER, UNLOCK_ALT};
-	set_cursor(210, 25);
-	set_font(&lv_font_fa);
-	print_str(symbols[(frm >> 6) % 6]);
+    if (btns & EV_BACK_L) {
+        is_inverted = !is_inverted;
+        set_inverted(is_inverted);
+    }
 
-	frm++;
+    bool update = false;
+    if (btns & EV_ENC_S) {
+        is_left_led = !is_left_led;
+        update = true;
+    }
+    if (btns & EV_ENC_L) {
+        leda = 0;
+        ledb = 0;
+        update = true;
+    }
+    if (diff != 0 || update || (frm == 0)) {
+        set_leda(leda);
+        set_ledb(ledb);
+        lv_update_label_hex(&l_leda, leda, 1);
+        lv_update_label_hex(&l_ledb, ledb, 1);
+        lv_border(is_left_led ? &l_leda : &l_ledb);
+    }
+
+    frm++;
+    ticks_d = ticks;
 }

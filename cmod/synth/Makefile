@@ -7,7 +7,8 @@ include ../common/common.mk
 BOOTLOADER_BAUDRATE = 921600
 BOOTLOADER_SERIAL = /dev/ttyUSB1
 HARDWARE = cmod_a7
-SYNTH_OPT += -DMEMORY_PACK_FAST
+# Doesn't meet timing ...
+# SYNTH_OPT += -DMEMORY_PACK_FAST
 
 SRC_V += system_top.v xilinx7_clocks.v
 OBJS += bootloader.o 0x0e0.lds
