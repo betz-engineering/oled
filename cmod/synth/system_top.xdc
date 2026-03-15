@@ -43,6 +43,8 @@ set_property -dict { PACKAGE_PIN H19   IOSTANDARD LVCMOS33 } [get_ports { UI_IO_
 set_property -dict { PACKAGE_PIN J19   IOSTANDARD LVCMOS33 } [get_ports { UI_IO_CSN }]; #IO_L6N_T0_D08_VREF_14 Sch=ja[9]
 set_property -dict { PACKAGE_PIN K18   IOSTANDARD LVCMOS33 } [get_ports { UI_OLED_DC }]; #IO_L8N_T1_D12_14 Sch=ja[10]
 
+# The interrupt input needs a PULLDOWN in case the ui_board gets unplugged
+set_property PULLTYPE PULLDOWN [get_ports UI_IO_INT];
 
 ## Analog XADC Pins
 ## Only declare these if you want to use pins 15 and 16 as single ended analog inputs. pin 15 -> vaux4, pin16 -> vaux12

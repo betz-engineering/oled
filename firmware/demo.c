@@ -2,6 +2,7 @@
 #include "frame_buffer.h"
 #include "gui.h"
 #include "lib/gui.h"
+#include "lib/ui_board.h"
 #include "lv_font.h"
 #include "lv_symbols.h"
 #include "print.h"
@@ -16,23 +17,22 @@ static const char *all_symbols[] = {
     THERMOMETER_FULL, BOLT, PLUG, MICROCHIP, BROADCAST_TOWER, UNLOCK_ALT};
 
 void demo(void) {
-    static bool is_inverted = false, is_left_led = true;
+    static bool is_inverted = false, is_left_led = true, is_ui_board_1u = false;
     static unsigned frm = 0, leda = 0, ledb = 0, ios_d = 1;
     static int ticks_d = 0;
     static t_label l_ticks, l_io, l_leda, l_ledb, l_symbol;
 
-    int enc = get_encoder_ticks(false);  // returns absolute encoder position
-    unsigned btns = get_button_flags();  // returns state of encoder and back button
 
     if (frm == 0) {
         lv_init_label(&l_leda, 0, 24, &lv_font_roboto_mono_17, "0", LV_LEFT, true);
         lv_init_label(&l_ledb, 15, 24, &lv_font_roboto_mono_17, "0", LV_LEFT, true);
         lv_triple(&l_ticks, 32, 16, &lv_font_roboto_mono_17, "Enc:", "-1000", "ticks");
-        lv_triple(&l_io, 32, 34, &lv_font_roboto_12, "IO:", "0000000000000000", "");
+        lv_triple(&l_io, 32, 34, &lv_font_roboto_12, "IO:", "00000000", "");
         lv_init_label(&l_symbol, 230, 10, &lv_font_fa, BROADCAST_TOWER, LV_CENTER, true);
     }
 
-    int ticks = get_encoder_ticks(false);
+    unsigned btns = get_button_flags();  // returns state of encoder and back button
+    int ticks = get_encoder_ticks(false);  // returns absolute encoder position
     int diff = ticks - ticks_d;
 
     if (diff != 0) {
@@ -54,8 +54,13 @@ void demo(void) {
 
     unsigned ios = get_gpios();
     if (ios != ios_d) {
-        lv_update_label_bin(&l_io, ios, 16);
+        lv_update_label_bin(&l_io, ios, 8);
         ios_d = ios;
+    }
+
+    if (btns & EV_ENC_L) {
+        is_ui_board_1u = !is_ui_board_1u;
+        ui_init(is_ui_board_1u);
     }
 
     if (btns & EV_BACK_L) {
@@ -68,7 +73,7 @@ void demo(void) {
         is_left_led = !is_left_led;
         update = true;
     }
-    if (btns & EV_ENC_L) {
+    if (btns & EV_BACK_S) {
         leda = 0;
         ledb = 0;
         update = true;

@@ -62,8 +62,7 @@ int main(void) {
   SET_GPIO1(IO_GPIO, GPIO_OUT_REG, IO_RSTN, 1);
   DELAY_MS(1);
 
-  ui_init(UI_BOARD_1U);
-  set_brightness(9);
+  ui_init(UI_BOARD);
 
   while (1) {
     demo();

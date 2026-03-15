@@ -2,10 +2,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// This library supports both, legacy ui_board, using 8-bit MCP23S08 and
-// ui_board_1u, using 16 bit MCP23S17. Use this define to enable legacy mode,
-// where only the color of 1 LED can be set to green, red or orange
-// #define UI_BOARD_LEGACY
+// This library supports both:
+//   * legacy ui_board, dual color LED, no back button, using 8-bit MCP23S08
+//   * ui_board_1u, 2x RGB LED, back button, using 16 bit MCP23S17
+// Select the flavor at runtime when calling ui_init();
+typedef enum { UI_BOARD, UI_BOARD_1U } t_ui_board_type;
 
 // Meaning of the bits in the value returned by get_button_flags()
 // It indicates which events happened since the last call
@@ -15,9 +16,6 @@
 #define EV_BACK_S (1 << 5)  // A short push and release of the back button happened
 #define EV_ENC_L (1 << 8)   // A long push and release of the encoder knob happened
 #define EV_BACK_L (1 << 9)  // A long push and release of the back button happened
-
-// Supported hardware flavors
-typedef enum { UI_BOARD, UI_BOARD_1U } t_ui_board_type;
 
 // Register this function to be called in an interrupt on a rising edge of the MCP23Sxx INT pin
 // or call it really fast in a loop (at least 200 Hz)

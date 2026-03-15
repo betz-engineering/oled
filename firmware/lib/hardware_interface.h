@@ -24,7 +24,7 @@ uint8_t ui_spi_rx_tx(uint8_t val);
 void ui_set_cs_n(t_ui_cs_n val);
 
 // Return the current state of the 2 CS_N pins. Used in the ISR to safe state.
-t_ui_cs_n ui_get_cs_n();
+t_ui_cs_n ui_get_cs_n(void);
 
 // Set the state of the D_C pin (1 = command, 0 = data for the SSD1322)
 void ui_set_dc(bool val);
