@@ -1,14 +1,11 @@
-include ../../Bedrock/dir_list.mk
-
 vpath %.c ../firmware
 vpath %.c ../firmware/lib
-vpath %.c $(PICORV_DIR)/firmware/src
 
-GIT_VERSION = $(shell git describe --abbrev=4 --dirty --always --tags)
+LDLIBS = -lm $(shell pkg-config --libs sdl2)
 
-LDLIBS = -lSDL2
-CFLAGS += -I../firmware -I../firmware/lib -I$(PICORV_DIR)/firmware/inc
-CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\" -DSDL_SIM -g
+CFLAGS += -I../firmware -I../firmware/lib -g $(shell pkg-config --cflags sdl2)
+CFLAGS += -Wall -DSDL_SIM -g
+
 OBJS = frame_buffer.o lv_font.o print.o demo.o gui.o
 OBJS += lv_font_roboto_12.o lv_font_roboto_mono_17.o lv_font_fa.o
 

@@ -5,12 +5,10 @@
 
 // 4 bits / pixel frame buffer
 uint8_t g_frameBuff[DISPLAY_HEIGHT * DISPLAY_WIDTH / 2];
-// struct {
-int g_x_min = DISPLAY_WIDTH - 1;
-int g_x_max = 0;
-int g_y_min = DISPLAY_HEIGHT - 1;
-int g_y_max = 0;
-// } update_window;
+static int g_x_min = DISPLAY_WIDTH - 1;
+static int g_x_max = 0;
+static int g_y_min = DISPLAY_HEIGHT - 1;
+static int g_y_max = 0;
 
 // Keep track of the rectangular area of the display which actually changed
 void update_window(int x0, int y0, int x1, int y1) {

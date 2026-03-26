@@ -1,3 +1,23 @@
+# dev branch
+the goal for now is cleaner low-level code
+
+  * provide a stable API for reading inputs, setting LEDs, sending the framebuffer
+  * support ui_board and ui_board_1u
+  * provide a well defined hardware abstraction layer for porting to new hardware
+  * support reading the inputs in polling or interrupt mode
+  * demonstrate the library on SDL, picorv32, litex_obsidian, and marble_mmc
+
+# Structure
+The `cmod` directory contains the verilog code and firmware for an example design running on a Digilent CMODA7.
+
+The `firmware` directory contains the `demo.c` code and some bitmap fonts for a simple demo application.
+
+The `firmware/lib` directory contains the re-usable library code for interacting with the ui_board.
+
+The `font` directory contains some font files in .ttf format and a python script to convert them to bitmap fonts usable by the library.
+
+The code in the `sdl_sim` directory is intended to be compiled on a linux host with `make`. It allows to preview the demo code on a PC using the SDL2 library. There are no other external dependencies.
+
 # OLED display driver for picorv32
 Tested on [NHD-2.8-25664UCB2](http://www.newhavendisplay.com/specs/NHD-2.8-25664UCB2.pdf): 256 x 64 pixels, 16 shades.
 Other displays with [ssd1322](https://www.newhavendisplay.com/app_notes/SSD1322.pdf#page=1&zoom=auto,-274,842) controller should also work.

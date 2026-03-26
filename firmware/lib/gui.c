@@ -1,7 +1,7 @@
 #include "gui.h"
 #include "frame_buffer.h"
 #include "lv_font.h"
-#include <print.h>
+#include "print.h"
 #include <stdarg.h>
 
 void lv_print(const char *str) {

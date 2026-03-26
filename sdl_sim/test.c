@@ -105,6 +105,7 @@ unsigned get_button_flags(void) { return btn_flags; }
 void set_leda(unsigned rgb_value) { printf("set_leda(%x)\n", rgb_value); }
 void set_ledb(unsigned rgb_value) { printf("set_ledb(%x)\n", rgb_value); }
 void set_inverted(bool val) { printf("set_inverted(%x)\n", val); };
+void ui_init(int val) { printf("ui_init(%d)\n", val); }
 
 // Get raw MCP23 GPIO input values
 uint16_t get_gpios(void) { return 0; }
