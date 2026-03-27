@@ -1,6 +1,7 @@
 // Implements a simple framebuffer and some drawing functions with 4 bit greyscale
 #include "frame_buffer.h"
 #include "ssd1322.h"
+#include <stdbool.h>
 #include <string.h>
 
 // 4 bits / pixel frame buffer
@@ -258,16 +259,26 @@ void drawLine(int x0, int y0, int x1, int y1) {
     setPixel(x1, y1, BASE_COLOR);
 }
 
-void send_partial_fb(void) {
-    // Check if the framebuffer changed at all
-    if (g_x_min > g_x_max || g_y_min > g_y_max)
-        return;
-
-    send_window_4(g_x_min, g_y_min, g_x_max, g_y_max, g_frameBuff);
-    g_x_min = DISPLAY_WIDTH - 1;
-    g_x_max = 0;
-    g_y_min = DISPLAY_HEIGHT - 1;
-    g_y_max = 0;
+bool send_partial_fb(void) {
+    static bool is_done = true;
+    if (is_done) {
+        // Check if the framebuffer was touched by the user at all
+        if (g_x_min <= g_x_max && g_y_min <= g_y_max) {
+            // If yes, start a new row-by-row transfer
+            is_done = send_window_4(g_x_min, g_y_min, g_x_max, g_y_max);
+        }
+    } else {
+        // A row-by-row transfer is still in progress. Transfer the next row.
+        is_done = send_window_4(-1, -1, -1, -1);  // arguments are ignored
+        // if all rows were sent, mark the framebuffer as not modified
+        if (is_done) {
+            g_x_min = DISPLAY_WIDTH - 1;
+            g_x_max = 0;
+            g_y_min = DISPLAY_HEIGHT - 1;
+            g_y_max = 0;
+        }
+    }
+    return is_done;
 }
 
-void send_fb(void) { write_vram(g_frameBuff); }
+// void send_fb(void) { write_vram(g_frameBuff); }

@@ -1,4 +1,5 @@
 #include "ui_board.h"
+#include "frame_buffer.h"
 #include "hardware_interface.h"
 #include "ssd1322.h"
 #include <stdint.h>
@@ -51,16 +52,13 @@
 // encoder, raw-input and button state.
 static volatile int enc_sum = 0;
 static volatile uint16_t gpio_state = 0;
-static unsigned button_flags = 0;
+static unsigned event_flags = 0;
 
 // Which hardware-flavor are we connected to?
 static t_ui_board_type board_type = UI_BOARD;
 
 // 4 bit lookup table for Gray-code transitions
 static const int8_t enc_table[16] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
-
-// Fallback if ui_get_int() was not defined by the user
-__attribute__((weak)) bool ui_get_int(void) { return true; };
 
 // Write a 8 bit register
 static void mcp23_write8(uint8_t addr, uint8_t val) {
@@ -81,33 +79,25 @@ static uint8_t mcp23_read8(uint8_t addr) {
     return tmp;
 }
 
-void ui_isr(void) {
+static void poll_inputs(void) {
     static unsigned cycle_enc_sw = 0, cycle_back_sw = 0;
     static bool is_initialized = false;
     static int8_t enc_d = 0;
 
-    // In polling mode we can return early if no IOs changed on the MCP23
+    // We can return early if no pins have changed on the MCP23
     if (!ui_get_int())
         return;
 
     // Read clock cycle counter
     unsigned cycles = ui_get_cycles();
 
-    unsigned cs_state = ui_get_cs_n();
-
-    // A SPI write transaction may be already in progress (sending OLED data)
-    // Wait for this transaction to complete
-    while (ui_spi_is_busy())
-        ;
-
     // Read the MCP23 IO pin state (PORTA only)
     const unsigned val = mcp23_read8(MCP23_GPIO);
-    ui_set_cs_n(cs_state);
 
     // read the current encoder state
     int8_t enc = (val >> 1) & 3;
 
-    // Don't send any events in the first hit
+    // Don't send any events in the first iteration
     if (!is_initialized) {
         gpio_state = val;
         enc_d = enc;
@@ -126,25 +116,25 @@ void ui_isr(void) {
         cycle_back_sw = cycles;
 
     // Set instantaneous button state in [1, 0]
-    button_flags &= ~0xF;
+    event_flags &= ~0xF;
     if (!(val & IO_ENC_SW))
-        button_flags |= 1;
+        event_flags |= 1;
     if (!(val & IO_BACK_SW))
-        button_flags |= 2;
+        event_flags |= 2;
 
     // On release, check if it was a long [9, 8] or a short press [5, 4]
-    // and set the bits in button_flags accordingly
+    // and set the bits in event_flags accordingly
     if (rising & IO_ENC_SW) {
         if ((cycles - cycle_enc_sw) > ui_t_long_press)
-            button_flags |= 1 << 8;
+            event_flags |= 1 << 8;
         else
-            button_flags |= 1 << 4;
+            event_flags |= 1 << 4;
     }
     if (rising & IO_BACK_SW) {
         if ((cycles - cycle_back_sw) > ui_t_long_press)
-            button_flags |= 2 << 8;
+            event_flags |= 2 << 8;
         else
-            button_flags |= 2 << 4;
+            event_flags |= 2 << 4;
     }
 
     // Decode current and previous encoder state with a 4 bit lookup table, accumulate steps
@@ -156,14 +146,43 @@ void ui_isr(void) {
     gpio_state = val;
 }
 
-void ui_init(t_ui_board_type value) {
-    ui_set_mcp_interrupt_enable(false);
+// if the highest bit is set, the value shall be written to the MCP in the next call to
+// ui_board_poll()
+static uint8_t led_a_value = 0, led_b_value = 0;
 
+bool ui_board_poll(void) {
+    // A non-blocking SPI transfer is still in progress, can't do anything for now
+    if (ui_spi_is_busy()) {
+        return false;
+    }
+
+    // Write the MCP23 outputs (if needed)
+    if (led_a_value & 0x80) {
+        led_a_value &= 7;
+        mcp23_write8(MCP23_OLAT + 0x10, led_a_value);
+    }
+
+    if (led_b_value & 0x80) {
+        led_b_value &= 7;
+        // LEDB is connected to bit 4, 5, 6 of PORTA
+        mcp23_write8(MCP23_OLAT, (led_b_value << 4) | IO_OLED_RES_N);
+    }
+
+    // Read the MCP23 inputs ...
+    poll_inputs();
+
+    // Send a (partial) frame-buffer. One row of pixels per iteration
+    // This function is supposed to be non-blocking.
+    return send_partial_fb();
+}
+
+void ui_init(t_ui_board_type value) {
     board_type = value;
     enc_sum = 0;
-    button_flags = 0;
+    event_flags = 0;
 
     // Use _banked_ register access on the MCP23S17, for compatibility with MCP23S08
+    mcp23_write8(MCP23_IOCON_INTERLEAVED, INTPOL | DISSLW | SEQOP | BANK);
     mcp23_write8(MCP23_IOCON_INTERLEAVED, INTPOL | DISSLW | SEQOP | BANK);
     // Write IOCON once more, in case we got an MCP23S08
     mcp23_write8(MCP23_IOCON, INTPOL | DISSLW | SEQOP | BANK);
@@ -181,16 +200,11 @@ void ui_init(t_ui_board_type value) {
 
     // # Init the OLED
     init_ssd1322();
-
-    ui_set_mcp_interrupt_enable(true);
 }
 
 int get_encoder_ticks(bool reset) {
     static int last_ticks = 0;
-    // I'm assuming we're on a system with atomic 32 bit reads. No need to disable interrupts.
-    // ui_set_mcp_interrupt_enable(false);
     int tmp = enc_sum;
-    // ui_set_mcp_interrupt_enable(true);
 
     int ret = tmp - last_ticks;
 
@@ -204,31 +218,27 @@ int get_encoder_ticks(bool reset) {
     return ret;
 }
 
-unsigned get_button_flags(void) {
-    // Will do a read-modify-write. Need to disable interrupts for it to be atomic.
-    ui_set_mcp_interrupt_enable(false);
-    unsigned ret = button_flags;
-    button_flags &= 0xF;  // clear the button-push event flags
-    ui_set_mcp_interrupt_enable(true);
-    return ret;
-}
-
-uint8_t uiBoardPoll(void) {
+// Converts the encoder number into a series of left / right events
+static unsigned get_rotate_events(void) {
     static int processed_ticks = 0;
     unsigned flags = 0;
     int ticks = get_encoder_ticks(false);
 
     if (ticks < processed_ticks) {
-        flags |= 1;
+        flags |= EV_ROT_CCW;
         processed_ticks--;
     } else if (ticks > processed_ticks) {
-        flags |= 2;
+        flags |= EV_ROT_CW;
         processed_ticks++;
     }
-    if (get_button_flags() & EV_ENC_S)
-        flags |= 4;
-
     return flags;
+}
+
+unsigned get_event_flags(void) {
+    unsigned ret = event_flags;
+    event_flags &= 0xF;  // clear the sticky button-push event flags
+    ret |= get_rotate_events();
+    return ret;
 }
 
 uint16_t get_gpios(void) { return gpio_state; }
@@ -238,22 +248,14 @@ void set_leda(unsigned rgb_value) {
     if (board_type == UI_BOARD_1U)
         rgb_value = ~rgb_value;
 
-    rgb_value &= 7;
-
     // LEDA is connected to the lower 3 bits of PORTB
-    ui_set_mcp_interrupt_enable(false);
-    mcp23_write8(MCP23_OLAT + 0x10, rgb_value);
-    ui_set_mcp_interrupt_enable(true);
+    led_a_value = 0x80 | (rgb_value & 7);
 }
 
 void set_ledb(unsigned rgb_value) {
     if (board_type == UI_BOARD_1U)
         rgb_value = ~rgb_value;
 
-    rgb_value &= 7;
-
-    // LEDB is connected to bit 4, 5, 6 of PORTA
-    ui_set_mcp_interrupt_enable(false);
-    mcp23_write8(MCP23_OLAT, (rgb_value << 4) | IO_OLED_RES_N);
-    ui_set_mcp_interrupt_enable(true);
+    // LEDA is connected to the lower 3 bits of PORTB
+    led_b_value = 0x80 | (rgb_value & 7);
 }

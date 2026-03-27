@@ -12,7 +12,7 @@ void set_inverted(bool val);
 
 // send the complete framebuffer to the display.
 // p needs to point to a buffer of size 8192 bytes
-void write_vram(uint8_t *p);
+// void write_vram(uint8_t *p);
 
 // send a certain rectangular window of the framebuffer to the display
 // x1, y1, x2, y2: the rectangle to update in [pixels]
@@ -20,4 +20,5 @@ void write_vram(uint8_t *p);
 // note that ssd1322 works with columns of 4 pixels horizontally
 // so the lower 2 bits of x1 and x2 will be truncated
 // data in 4 bits / pixel, 2 pixels / byte
-void send_window_4(unsigned x1, unsigned y1, unsigned x2, unsigned y2, uint8_t *data);
+// before calling this, make sure the SPI peripheral is IDLE
+bool send_window_4(int x1, int y1, int x2, int y2);

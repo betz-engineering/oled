@@ -1,5 +1,6 @@
 #ifndef FRAME_BUFFER_H
 #define FRAME_BUFFER_H
+#include <stdbool.h>
 #include <stdint.h>
 
 #define LV_BPP 4
@@ -28,8 +29,12 @@ void rect(int x0, int y0, int x1, int y1, uint8_t shade);
 void drawLine(int x0, int y0, int x1, int y1);
 
 // send the complete framebuffer to the display
-void send_fb(void);
+// void send_fb(void);
 
 // send only the modified window of the framebuffer to the display
-void send_partial_fb(void);
+// Returns true if the framebuffer is up-to-date with the OLED
+// Normally there is no need to call this.
+// Just call ui_board_poll() which will send the framebuffer if needed.
+bool send_partial_fb(void);
+
 #endif

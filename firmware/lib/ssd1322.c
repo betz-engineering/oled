@@ -3,10 +3,11 @@
 #include "hardware_interface.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 // Initialization for SSD1322 based OLED display
 // the dc_vector contains the state of the DC pin for each init-byte. LSB first.
-static const uint64_t dc_vector = 0b1110101010010100000000000000010101001010100101010101001001101;
+static const uint64_t dc_vector = 0x1d528000a952aa4d;
 // clang-format off
 static const uint8_t init[] = {
     0xFD, 0x12,     // Unlock OLED driver IC
@@ -60,6 +61,9 @@ void init_ssd1322(void) {
 }
 
 void set_brightness(uint8_t val) {
+    while (ui_spi_is_busy())
+        ;
+
     ui_set_cs_n(SELECT_OLED);
     if (val == 0) {
         send_cmd(0xAE);  // display off
@@ -72,43 +76,62 @@ void set_brightness(uint8_t val) {
 }
 
 void set_inverted(bool val) {
+    while (ui_spi_is_busy())
+        ;
+
     ui_set_cs_n(SELECT_OLED);
     send_cmd(val ? 0xA7 : 0xA6);
     ui_set_cs_n(SELECT_NONE);
 }
 
-void write_vram(uint8_t *p) {
-    ui_set_cs_n(SELECT_OLED);
-    send_cmd(0x5C);  // write VRAM command
-    for (unsigned i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT / 2); i++)
-        send_data(*p++);
-    ui_set_cs_n(SELECT_NONE);
-}
+bool send_window_4(int x1, int y1, int x2, int y2) {
+    static bool is_done = true;  // Are we ready to accept a new command
+    static int x1_ = 0, y1_ = 0, x2_ = 0, y2_ = 0, row = 0;
 
-void send_window_4(unsigned x1, unsigned y1, unsigned x2, unsigned y2, uint8_t *data) {
-    // printf("send_window_4(%3d, %3d, %3d, %3d)\n", x1, y1, x2, y2);
-
-    // truncate the 2 LSBs
-    x1 >>= 2;
-    x2 >>= 2;
-
-    ui_set_cs_n(SELECT_OLED);
-    send_cmd(0x15);  // Set column address range
-    send_data(0x1C + x1);
-    send_data(0x1C + x2);
-
-    send_cmd(0x75);  // Set row address range
-    send_data(y1);
-    send_data(y2);
-
-    send_cmd(0x5C);  // write VRAM
-    for (unsigned row = y1; row <= y2; row++) {
-        uint8_t *p = &data[row * DISPLAY_WIDTH / 2 + x1 * 2];
-        for (unsigned column = x1; column <= x2; column++) {
-            // Each column contains 4 pixels = 2 bytes
-            send_data(*p++);
-            send_data(*p++);
+    if (is_done) {
+        // Start a new transfer
+        // ... after a quick sanity check
+        if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0 || x1 > x2 || y1 > y2) {
+            printf("send_window_4(%3d, %3d, %3d, %3d) invalid!!!\n", x1, y1, x2, y2);
+            return is_done;
         }
+
+        // Prints which region of the screen is redrawn
+        // printf("send_window_4(%3d, %3d, %3d, %3d)\n", x1, y1, x2, y2);
+
+        y1_ = y1;  // Store the state
+        y2_ = y2;
+        x1_ = x1 >> 2;  // truncate the 2 LSBs for X
+        x2_ = x2 >> 2;  // because 1 addressable column contains 4 pixels
+
+        row = y1_;
+        is_done = false;
+
+        // Setup the SSD1322 addressing window
+        ui_set_cs_n(SELECT_OLED);
+        send_cmd(0x15);  // Set column address range
+        send_data(0x1C + x1_);
+        send_data(0x1C + x2_);
+
+        send_cmd(0x75);  // Set row address range
+        send_data(y1_);
+        send_data(y2_);
+        send_cmd(0x5C);  // write VRAM
     }
-    ui_set_cs_n(SELECT_NONE);
+
+    // Check if we are done
+    if (row > y2_) {
+        ui_set_cs_n(SELECT_NONE);
+        is_done = true;
+    } else {
+        // Send a single row to the OLED
+        uint8_t *p = &g_frameBuff[row * DISPLAY_WIDTH / 2 + x1_ * 2];
+        // Each column contains 4 pixels = 2 bytes
+        unsigned len = (x2_ - x1_ + 1) * 2;  // [bytes]
+        ui_set_cs_n(SELECT_OLED);
+        ui_spi_tx_chunk(p, len);  // initiate a new DMA transfer
+        row++;
+    }
+
+    return is_done;
 }

@@ -10,16 +10,14 @@ typedef enum { UI_BOARD, UI_BOARD_1U } t_ui_board_type;
 
 // Meaning of the bits in the value returned by get_button_flags()
 // It indicates which events happened since the last call
-#define EV_ENC (1 << 0)     // Current state of the encoder knob (1 = pushed)
-#define EV_BACK (1 << 1)    // Current state of the back button (1 = pushed)
-#define EV_ENC_S (1 << 4)   // A short push and release of the encoder knob happened
-#define EV_BACK_S (1 << 5)  // A short push and release of the back button happened
-#define EV_ENC_L (1 << 8)   // A long push and release of the encoder knob happened
-#define EV_BACK_L (1 << 9)  // A long push and release of the back button happened
-
-// Register this function to be called in an interrupt on a rising edge of the MCP23Sxx INT pin
-// or call it really fast in a loop (at least 200 Hz)
-void ui_isr(void);
+#define EV_ENC (1 << 0)       // Current state of the encoder knob (1 = pushed)
+#define EV_BACK (1 << 1)      // Current state of the back button (1 = pushed)
+#define EV_ENC_S (1 << 4)     // A short push and release of the encoder knob happened
+#define EV_BACK_S (1 << 5)    // A short push and release of the back button happened
+#define EV_ENC_L (1 << 8)     // A long push and release of the encoder knob happened
+#define EV_BACK_L (1 << 9)    // A long push and release of the back button happened
+#define EV_ROT_CCW (1 << 12)  // The encoder was rotated one step counter-clockwise
+#define EV_ROT_CW (1 << 13)   // The encoder was rotated one step clockwise
 
 // Call this once to initialize the ui_board
 // before calling this:
@@ -33,10 +31,16 @@ int get_encoder_ticks(bool reset);
 
 // returns the instantaneous state of the encoder and back button (in the 2 LSBs)
 // the other bits are used to indicate events. See the EV_ flags above.
-unsigned get_button_flags(void);
+unsigned get_event_flags(void);
 
-// returns 3 bits corresponding to 3 events: {encoder_pushed, right, left}
-uint8_t uiBoardPoll(void);
+// Call this in a tight loop.
+// for each call, it:
+//   * updates the LEDs
+//   * reads the inputs (including the encoder)
+//   * sends the frame-buffer if it was changed (one row per call)
+// returns false when the framebuffer is currently being sent to the OLED.
+// to avoid glitches, only draw to the framebuffer after it returns true.
+bool ui_board_poll(void);
 
 // # Set the LED status, bits of rgb_value are {B, G, R}
 void set_leda(unsigned rgb_value);
