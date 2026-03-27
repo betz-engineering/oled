@@ -213,6 +213,24 @@ unsigned get_button_flags(void) {
     return ret;
 }
 
+uint8_t uiBoardPoll(void) {
+    static int processed_ticks = 0;
+    unsigned flags = 0;
+    int ticks = get_encoder_ticks(false);
+
+    if (ticks < processed_ticks) {
+        flags |= 1;
+        processed_ticks--;
+    } else if (ticks > processed_ticks) {
+        flags |= 2;
+        processed_ticks++;
+    }
+    if (get_button_flags() & EV_ENC_S)
+        flags |= 4;
+
+    return flags;
+}
+
 uint16_t get_gpios(void) { return gpio_state; }
 
 void set_leda(unsigned rgb_value) {

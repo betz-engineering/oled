@@ -35,6 +35,9 @@ int get_encoder_ticks(bool reset);
 // the other bits are used to indicate events. See the EV_ flags above.
 unsigned get_button_flags(void);
 
+// returns 3 bits corresponding to 3 events: {encoder_pushed, right, left}
+uint8_t uiBoardPoll(void);
+
 // # Set the LED status, bits of rgb_value are {B, G, R}
 void set_leda(unsigned rgb_value);
 void set_ledb(unsigned rgb_value);
