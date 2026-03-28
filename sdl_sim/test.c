@@ -2,9 +2,9 @@
 #include "demo.h"
 #include "frame_buffer.h"
 #include "lv_font.h"
+#include "ui_board.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_blendmode.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
@@ -25,7 +25,7 @@ SDL_Texture *layer_fg;
 // note that ssd1322 works with columns of 4 pixels horizontally
 // so the lower 2 bits of x1 and x2 will be truncated
 // data in 4 bits / pixel, 2 pixels / byte
-void send_window_4(unsigned x1, unsigned y1, unsigned x2, unsigned y2,
+bool send_window_4(unsigned x1, unsigned y1, unsigned x2, unsigned y2,
                    uint8_t *data) {
   // printf("send_window_4(%3d, %3d, %3d, %3d)\n", x1, y1, x2, y2);
 
@@ -52,19 +52,8 @@ void send_window_4(unsigned x1, unsigned y1, unsigned x2, unsigned y2,
   rect.w = x2 - x1 + 1;
   rect.h = y2 - y1 + 1;
   SDL_RenderDrawRect(rr, &rect);
-}
 
-void write_vram(uint8_t *p) {
-  for (unsigned int y = 0; y < DISPLAY_HEIGHT; y++) {
-    for (int x = 0; x < DISPLAY_WIDTH; x += 2) {
-      SDL_SetRenderDrawColor(rr, 0, 0, (*p & 0xF) << 4, 0xFF);
-      SDL_RenderDrawPoint(rr, x, y);
-      SDL_SetRenderDrawColor(rr, 0, 0, (*p & 0xF0), 0xFF);
-      SDL_RenderDrawPoint(rr, x, y);
-      p++;
-    }
-  }
-  SDL_RenderPresent(rr);
+  return true;
 }
 
 static void init_sdl() {
@@ -95,17 +84,15 @@ static void init_sdl() {
 
 // Mock user interface
 int ticks = 0;
-unsigned btn_flags = 0;
+unsigned event_flags = 0;
 int get_encoder_ticks(bool reset) { return ticks; }
 
-// {back_long_press, enc_long_press, 0, 0, back_short_press, enc_short_press, 0,
-// 0, back, enc},
-unsigned get_button_flags(void) { return btn_flags; }
+unsigned get_event_flags(void) { return event_flags; }
 
 void set_leda(unsigned rgb_value) { printf("set_leda(%x)\n", rgb_value); }
 void set_ledb(unsigned rgb_value) { printf("set_ledb(%x)\n", rgb_value); }
 void set_inverted(bool val) { printf("set_inverted(%x)\n", val); };
-void ui_init(int val) { printf("ui_init(%d)\n", val); }
+void ui_init(t_ui_board_type val) { printf("ui_init(%d)\n", val); }
 
 // Get raw MCP23 GPIO input values
 uint16_t get_gpios(void) { return 0; }
@@ -128,18 +115,20 @@ int main(int argc, char *args[]) {
         switch (e.key.keysym.sym) {
         case SDLK_LEFT:
           ticks--;
+          event_flags |= EV_ROT_CCW;
           break;
 
         case SDLK_RIGHT:
           ticks++;
+          event_flags |= EV_ROT_CW;
           break;
 
         case SDLK_DOWN:
-          btn_flags |= 0x111;
+          event_flags |= EV_ENC_S;
           break;
 
         case SDLK_UP:
-          btn_flags |= 0x222;
+          event_flags |= EV_BACK_S;
           break;
         }
         break;
@@ -150,7 +139,6 @@ int main(int argc, char *args[]) {
 
     demo();
     send_partial_fb();
-    // send_fb();
 
     // Compose the 2 layers
     SDL_SetRenderTarget(rr, NULL); // default backbuffer
@@ -164,7 +152,7 @@ int main(int argc, char *args[]) {
     SDL_SetRenderTarget(rr, layer_fg);
     SDL_SetRenderDrawColor(rr, 0, 0, 0, 0);
     SDL_RenderClear(rr);
-    btn_flags = 0;
+    event_flags = 0;
 
     SDL_Delay(30);
   }

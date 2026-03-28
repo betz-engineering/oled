@@ -10,11 +10,11 @@ void set_brightness(uint8_t val);
 // invert the display
 void set_inverted(bool val);
 
-// send the complete framebuffer to the display.
-// p needs to point to a buffer of size 8192 bytes
-// void write_vram(uint8_t *p);
-
 // send a certain rectangular window of the framebuffer to the display
+// It only sends one row per call, so it needs to be called multiple times.
+// For subsequent calls, the arguments are ignored.
+// It returns true once all rows have been sent and if a new transaction
+// may be started.
 // x1, y1, x2, y2: the rectangle to update in [pixels]
 // x1, y1, x2 and y2 are all inclusive!
 // note that ssd1322 works with columns of 4 pixels horizontally

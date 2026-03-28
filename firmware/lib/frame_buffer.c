@@ -270,13 +270,13 @@ bool send_partial_fb(void) {
     } else {
         // A row-by-row transfer is still in progress. Transfer the next row.
         is_done = send_window_4(-1, -1, -1, -1);  // arguments are ignored
-        // if all rows were sent, mark the framebuffer as not modified
-        if (is_done) {
-            g_x_min = DISPLAY_WIDTH - 1;
-            g_x_max = 0;
-            g_y_min = DISPLAY_HEIGHT - 1;
-            g_y_max = 0;
-        }
+    }
+    // if all rows were sent, mark the framebuffer as not modified
+    if (is_done) {
+        g_x_min = DISPLAY_WIDTH - 1;
+        g_x_max = 0;
+        g_y_min = DISPLAY_HEIGHT - 1;
+        g_y_max = 0;
     }
     return is_done;
 }
