@@ -25,6 +25,7 @@
 #define IO_GPIO                 BASE_GPIO
 #define IO_CSN                  1
 #define IO_RSTN                 2
+#define IO_INT                  3
 
 #define IRQ_UART0_RX            0x03
 #define IRQ_MCP32				0x04

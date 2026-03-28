@@ -50,7 +50,7 @@ See `cmod/synth` directory for a synthesizable demo which runs on the Cmod A7 + 
 
 It demonstrates drawing to the display, setting the LED color and reading the rotary encoder.
 
-This assumes the ui_board is directly, __without cable__, plugged into the Cmod A7 PMOD header.
+Check the included [README.md](cmod/README.md) for details.
 
 # Copyright Notice
 OLED Display Driver (oled) Copyright (c) 2025, The Regents of the University of California,

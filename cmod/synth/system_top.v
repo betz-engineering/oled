@@ -17,7 +17,8 @@ module system_top (
     output           UI_COPI,
     input            UI_CIPO,
     output           UI_SCK,
-    input            UI_IO_INT,
+    // Needs to be inout, else it can't be connected to GPIOZ
+    inout            UI_IO_INT,
     output           UI_IO_RSTN,
     output           UI_IO_CSN,
     output           UI_OLED_DC
@@ -69,7 +70,7 @@ system #(
     .gpio_z      ({
         LEDS[1:0], LED_B, 1'b0, 1'b0,
         UI_OLED_CSN,
-        1'b0,
+        UI_IO_INT,
         UI_IO_RSTN,
         UI_IO_CSN,
         UI_OLED_DC

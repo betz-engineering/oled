@@ -8,6 +8,7 @@
 #include "print.h"
 #include "ssd1322.h"
 #include "ui_board.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 extern lv_font_t lv_font_roboto_12, lv_font_roboto_mono_17, lv_font_fa;
@@ -17,13 +18,14 @@ static const char *all_symbols[] = {
     THERMOMETER_FULL, BOLT, PLUG, MICROCHIP, BROADCAST_TOWER, UNLOCK_ALT};
 
 void demo(void) {
-    static bool is_inverted = false, is_left_led = true, is_ui_board_1u = false;
+    static bool is_inverted = false, is_left_led = false, is_ui_board_1u = false;
     static unsigned frm = 0, leda = 0, ledb = 0, ios_d = 1;
     static int ticks_d = 0;
     static t_label l_ticks, l_io, l_leda, l_ledb, l_symbol;
 
-
     if (frm == 0) {
+        printf("Clearing the screen and re-initializing\n");
+        fill(0);
         lv_init_label(&l_leda, 0, 24, &lv_font_roboto_mono_17, "0", LV_LEFT, true);
         lv_init_label(&l_ledb, 15, 24, &lv_font_roboto_mono_17, "0", LV_LEFT, true);
         lv_triple(&l_ticks, 32, 16, &lv_font_roboto_mono_17, "Enc:", "-1000", "ticks");
@@ -31,11 +33,18 @@ void demo(void) {
         lv_init_label(&l_symbol, 230, 10, &lv_font_fa, BROADCAST_TOWER, LV_CENTER, true);
     }
 
-    unsigned btns = get_button_flags();  // returns state of encoder and back button
+    unsigned events = get_event_flags();   // returns state of encoder and back button
     int ticks = get_encoder_ticks(false);  // returns absolute encoder position
     int diff = ticks - ticks_d;
 
-    if (diff != 0) {
+    static unsigned events_d = 0;
+    if (events_d != events) {
+        if (events != 0)
+            printf("events: %04x  ticks: %d\n", events, ticks);
+        events_d = events;
+    }
+
+    if (diff != 0 || frm == 0) {
         lv_update_label_dp(&l_ticks, ticks, 3, 0);
 
         // Symbols show-case
@@ -43,7 +52,7 @@ void demo(void) {
 
         // Greyscale bar at the bottom
         for (int x = 0; x < DISPLAY_WIDTH; x += 8)
-            fillRect(x, 55, x + 7, 63, (x / 8 + ticks) & 0xF);
+            fillRect(x, 55, x + 7, 63, (x / 8 - ticks) & 0xF);
 
         if (is_left_led) {
             leda = (leda + diff) & 0x7;
@@ -58,22 +67,24 @@ void demo(void) {
         ios_d = ios;
     }
 
-    if (btns & EV_ENC_L) {
+    if (events & EV_ENC_L) {
         is_ui_board_1u = !is_ui_board_1u;
         ui_init(is_ui_board_1u);
+        frm = 0;  // force a full display refresh
+        return;
     }
 
-    if (btns & EV_BACK_L) {
+    if (events & EV_BACK_L) {
         is_inverted = !is_inverted;
         set_inverted(is_inverted);
     }
 
     bool update = false;
-    if (btns & EV_ENC_S) {
+    if (events & EV_ENC_S) {
         is_left_led = !is_left_led;
         update = true;
     }
-    if (btns & EV_BACK_S) {
+    if (events & EV_BACK_S) {
         leda = 0;
         ledb = 0;
         update = true;

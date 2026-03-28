@@ -3,6 +3,7 @@
 #include "lv_font.h"
 #include "print.h"
 #include <stdarg.h>
+#include <stdio.h>
 
 void lv_print(const char *str) {
     reset_bb();
@@ -52,16 +53,14 @@ void lv_init_label(
 }
 
 // call it like printf
-// void lv_update_labelf(t_label *lbl, const char *format, ...) {
-//     int w = 0, h = 0;
-//     char buf[32], *p = buf;
-
-//     va_list argptr;
-//     va_start(argptr, format);
-//     vsnprintf(buf, sizeof(buf), format, argptr);
-//     va_end(argptr);
-//     lv_update_label(lbl, buf);
-// }
+void lv_update_labelf(t_label *lbl, const char *format, ...) {
+    char buf[32];
+    va_list argptr;
+    va_start(argptr, format);
+    vsnprintf(buf, sizeof(buf), format, argptr);
+    va_end(argptr);
+    lv_update_label(lbl, buf);
+}
 
 void lv_border(t_label *lbl) {
     rect(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 7);  // show bb

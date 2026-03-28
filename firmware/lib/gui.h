@@ -35,11 +35,10 @@ void lv_init_label(
     t_label *lbl, int x, int y, lv_font_t *fnt, const char *init, t_align a, bool draw);
 
 // Update the text in a label
-// void lv_update_label(t_label *lbl, const char *format, ...);  // printf-like version
 void lv_update_label(t_label *lbl, const char *buf);
 
 // call it like printf
-// void lv_update_labelf(t_label *lbl, const char *format, ...);
+void lv_update_labelf(t_label *lbl, const char *format, ...);
 
 // Update the text in a label with a fixed point fractional number
 void lv_update_label_fix(t_label *lbl, int32_t val, const uint8_t nFract, uint8_t nDigits);

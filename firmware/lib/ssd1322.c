@@ -3,7 +3,6 @@
 #include "hardware_interface.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 // Initialization for SSD1322 based OLED display
 // the dc_vector contains the state of the DC pin for each init-byte. LSB first.
@@ -92,7 +91,7 @@ bool send_window_4(int x1, int y1, int x2, int y2) {
         // Start a new transfer
         // ... after a quick sanity check
         if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0 || x1 > x2 || y1 > y2) {
-            printf("send_window_4(%3d, %3d, %3d, %3d) invalid!!!\n", x1, y1, x2, y2);
+            // printf("send_window_4(%3d, %3d, %3d, %3d) invalid!!!\n", x1, y1, x2, y2);
             return is_done;
         }
 

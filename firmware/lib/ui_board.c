@@ -138,9 +138,14 @@ static void poll_inputs(void) {
     }
 
     // Decode current and previous encoder state with a 4 bit lookup table, accumulate steps
-    // The encoder makes 4 electrical steps / detent.
-    // so the actual useful value is enc_sum >> 2. The LSB may jitter due to switch bouncing.
     enc_sum -= enc_table[(enc_d << 2) | enc];
+
+    if (board_type == UI_BOARD_1U) {
+        // Snap to the nearest multiple of 4 when resting at a mechanical detent
+        if (enc == 0b11 || enc == 0b10) {
+            enc_sum = (enc_sum + 2) & ~3;
+        }
+    }
 
     enc_d = enc;
     gpio_state = val;
@@ -194,12 +199,14 @@ void ui_init(t_ui_board_type value) {
     mcp23_write8(MCP23_IODIR + 0x10, ~(IO_LEDA_R | IO_LEDA_G | IO_LEDA_B));
     // enable interrupts for switches and encoder (PORTA only)
     mcp23_write8(MCP23_GPINTEN, IO_ENC_A | IO_ENC_B | IO_ENC_SW | IO_BACK_SW);
-
-    set_ledb(0);  // This will set the OLED RESET_N pin high
-    set_leda(0);
+    // for ui_board: release the OLED reset
+    mcp23_write8(MCP23_OLAT, IO_OLED_RES_N);
 
     // # Init the OLED
     init_ssd1322();
+
+    set_ledb(0);
+    set_leda(0);
 }
 
 int get_encoder_ticks(bool reset) {
