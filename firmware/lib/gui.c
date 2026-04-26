@@ -1,15 +1,10 @@
 #include "gui.h"
+#include "font.h"
 #include "frame_buffer.h"
-#include "lv_font.h"
+#include "graphics.h"
 #include "print.h"
 #include <stdarg.h>
 #include <stdio.h>
-
-void lv_print(const char *str) {
-    reset_bb();
-    while (*str)
-        draw_char(*str++);
-}
 
 // Initialize a `label`, which has a fixed bounding box and alignment
 // x, y = position of anchor point
@@ -19,35 +14,23 @@ void lv_print(const char *str) {
 // draw = if true, also draw the init string to the framebuffer
 // use lv_update_label to change the label content
 void lv_init_label(
-    t_label *lbl, int x, int y, lv_font_t *fnt, const char *init, t_align a, bool draw) {
-    int w = 0, h = 0;
-    lbl->x = x;
-    lbl->y = y;
-    lbl->y0 = y;
+    t_label *lbl, int x, int y, const font_header_t *fnt, const char *init, t_align a, bool draw) {
+    int left = 0, right = 0, top = 0, bottom = 0;
+    init_from_header(fnt);
+    fnt_get_bb(init, 64, a, &left, &right, &top, &bottom);
     lbl->fnt = fnt;
     lbl->align = a;
-    set_font(fnt);
-    get_bb(init, &w, &h);
-    if (a == LV_LEFT) {
-        // x, y anchor on the left and aligned left
-        lbl->x0 = x;
-        lbl->x1 = x + w;
-    } else if (a == LV_CENTER) {
-        // x, y anchor centered and aligned centered
-        lbl->x0 = x - w / 2;
-        lbl->x1 = x + w / 2;
-    } else if (a == LV_RIGHT) {
-        // x, y anchor on the right and aligned right
-        lbl->x0 = x - w;
-        lbl->x1 = x;
-    } else if (a == LV_RIGHT_REF_LEFT) {
+    lbl->x = x;
+    lbl->y = y;
+    lbl->x0 = x + left;
+    lbl->x1 = x + right;
+    lbl->y0 = y + top;
+    lbl->y1 = y + bottom;
+    if (a == A_RIGHT_REF_LEFT) {
         // x, y anchor on the left but aligned right
-        lbl->x0 = x;
-        lbl->x1 = x + w;
-        lbl->x += w;
-        lbl->align = LV_RIGHT;
+        lbl->x += right;
+        lbl->align = A_RIGHT;
     }
-    lbl->y1 = y + h;
     if (draw)
         lv_update_label(lbl, init);
 }
@@ -63,35 +46,26 @@ void lv_update_labelf(t_label *lbl, const char *format, ...) {
 }
 
 void lv_border(t_label *lbl) {
-    rect(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 7);  // show bb
+    draw_rectangle(lbl->x0 - 1, lbl->y0 - 1, lbl->x1, lbl->y1, 0xFF);  // show bb
 }
 
 void lv_update_label(t_label *lbl, const char *buf) {
-    int w = 0, h = 0;
-    fillRect(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0);
-    // rect(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 7);  // show bb
+    set_draw_mode(DRAW_SET);
+    fill_rectangle(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0x00);
+    // draw_rectangle(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0xFF);  // show bb
 
-    set_font(lbl->fnt);
-    if (lbl->align == LV_LEFT) {
-        set_cursor(lbl->x, lbl->y);
-    } else if (lbl->align == LV_CENTER) {
-        get_bb(buf, &w, &h);
-        set_cursor(lbl->x - w / 2, lbl->y);
-    } else if (lbl->align == LV_RIGHT) {
-        get_bb(buf, &w, &h);
-        set_cursor(lbl->x - w, lbl->y);
-    }
-    set_bb(lbl->x0, lbl->x1, lbl->y0, lbl->y1);
-    while (*buf)
-        draw_char(*buf++);
+    init_from_header(lbl->fnt);
+    set_draw_region(lbl->x0, lbl->y0, lbl->x1, lbl->y1);
+    set_draw_mode(DRAW_ADD);
+    push_str(lbl->x, lbl->y, buf, 64, lbl->align);
 }
 
 void lv_triple(
-    t_label *nmb, int x, int y, lv_font_t *fnt, const char *a, const char *b, const char *c) {
+    t_label *nmb, int x, int y, const font_header_t *fnt, const char *a, const char *b, const char *c) {
     t_label tmp;
-    lv_init_label(&tmp, x, y, fnt, a, LV_LEFT, true);
-    lv_init_label(nmb, tmp.x1 + 4, y, fnt, b, LV_RIGHT_REF_LEFT, false);
-    lv_init_label(&tmp, nmb->x1 + 4, y, fnt, c, LV_LEFT, true);
+    lv_init_label(&tmp, x, y, fnt, a, A_LEFT, true);
+    lv_init_label(nmb, tmp.x1 + 4, y, fnt, b, A_RIGHT_REF_LEFT, false);
+    lv_init_label(&tmp, nmb->x1 + 4, y, fnt, c, A_LEFT, true);
 }
 
 void lv_update_label_dp(t_label *lbl, int32_t val, const uint8_t n, const uint8_t dp) {

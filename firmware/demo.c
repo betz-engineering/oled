@@ -1,17 +1,19 @@
 #include "demo.h"
+#include "font.h"
+#include "font_awesome_5_free.h"
 #include "frame_buffer.h"
+#include "graphics.h"
 #include "gui.h"
 #include "lib/gui.h"
 #include "lib/ui_board.h"
-#include "lv_font.h"
 #include "lv_symbols.h"
 #include "print.h"
+#include "roboto.h"
+#include "roboto_mono.h"
 #include "ssd1322.h"
 #include "ui_board.h"
 #include <stdio.h>
 #include <stdlib.h>
-
-extern lv_font_t lv_font_roboto_12, lv_font_roboto_mono_17, lv_font_fa;
 
 #define N_SYMBOLS 6
 static const char *all_symbols[] = {
@@ -26,11 +28,11 @@ void demo(void) {
     if (frm == 0) {
         printf("Clearing the screen and re-initializing\n");
         fill(0);
-        lv_init_label(&l_leda, 0, 24, &lv_font_roboto_mono_17, "0", LV_LEFT, true);
-        lv_init_label(&l_ledb, 15, 24, &lv_font_roboto_mono_17, "0", LV_LEFT, true);
-        lv_triple(&l_ticks, 32, 16, &lv_font_roboto_mono_17, "Enc:", "-1000", "ticks");
-        lv_triple(&l_io, 32, 34, &lv_font_roboto_12, "IO:", "00000000", "");
-        lv_init_label(&l_symbol, 230, 10, &lv_font_fa, BROADCAST_TOWER, LV_CENTER, true);
+        lv_init_label(&l_leda, 0, 24, &f_roboto_mono, "0", A_LEFT, true);
+        lv_init_label(&l_ledb, 15, 24, &f_roboto_mono, "0", A_LEFT, true);
+        lv_triple(&l_ticks, 32, 16, &f_roboto_mono, "Enc:", "-1000", "ticks");
+        lv_triple(&l_io, 32, 34, &f_roboto, "IO:", "00000000", "");
+        lv_init_label(&l_symbol, 230, 50, &f_font_awesome_5_free, BROADCAST_TOWER, A_CENTER, true);
     }
 
     unsigned events = get_event_flags();   // returns state of encoder and back button
@@ -51,8 +53,9 @@ void demo(void) {
         lv_update_label(&l_symbol, all_symbols[abs(ticks) % N_SYMBOLS]);
 
         // Greyscale bar at the bottom
-        for (int x = 0; x < DISPLAY_WIDTH; x += 8)
-            fillRect(x, 55, x + 7, 63, (x / 8 - ticks) & 0xF);
+        set_draw_mode(DRAW_SET);
+        for (int x = 0; x < FB_WIDTH; x += 8)
+            fill_rectangle(x, 55, x + 7, 63, (x / 8 - ticks));
 
         if (is_left_led) {
             leda = (leda + diff) & 0x7;
