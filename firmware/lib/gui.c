@@ -22,10 +22,10 @@ void lv_init_label(
     lbl->align = a;
     lbl->x = x;
     lbl->y = y;
-    lbl->x0 = x + left;
-    lbl->x1 = x + right;
-    lbl->y0 = y + top;
-    lbl->y1 = y + bottom;
+    lbl->x0 = x + left - 2;
+    lbl->x1 = x + right + 1;
+    lbl->y0 = y + top - 2;
+    lbl->y1 = y + bottom + 1;
     if (a == A_RIGHT_REF_LEFT) {
         // x, y anchor on the left but aligned right
         lbl->x += right;
@@ -46,7 +46,8 @@ void lv_update_labelf(t_label *lbl, const char *format, ...) {
 }
 
 void lv_border(t_label *lbl) {
-    draw_rectangle(lbl->x0 - 1, lbl->y0 - 1, lbl->x1, lbl->y1, 0xFF);  // show bb
+    set_draw_mode(DRAW_ADD);
+    draw_rectangle(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0xFF);  // show bb
 }
 
 void lv_update_label(t_label *lbl, const char *buf) {
@@ -54,10 +55,11 @@ void lv_update_label(t_label *lbl, const char *buf) {
     fill_rectangle(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0x00);
     // draw_rectangle(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0xFF);  // show bb
 
+    set_draw_mode(DRAW_ADD);
     init_from_header(lbl->fnt);
     set_draw_region(lbl->x0, lbl->y0, lbl->x1, lbl->y1);
-    set_draw_mode(DRAW_ADD);
     push_str(lbl->x, lbl->y, buf, 64, lbl->align);
+    set_draw_region_full();
 }
 
 void lv_triple(

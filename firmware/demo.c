@@ -15,10 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N_SYMBOLS 6
-static const char *all_symbols[] = {
-    THERMOMETER_FULL, BOLT, PLUG, MICROCHIP, BROADCAST_TOWER, UNLOCK_ALT};
-
 void demo(void) {
     static bool is_inverted = false, is_left_led = false, is_ui_board_1u = false;
     static unsigned frm = 0, leda = 0, ledb = 0, ios_d = 1;
@@ -27,12 +23,12 @@ void demo(void) {
 
     if (frm == 0) {
         printf("Clearing the screen and re-initializing\n");
-        fill(0);
-        lv_init_label(&l_leda, 0, 24, &f_roboto_mono, "0", A_LEFT, true);
-        lv_init_label(&l_ledb, 15, 24, &f_roboto_mono, "0", A_LEFT, true);
-        lv_triple(&l_ticks, 32, 16, &f_roboto_mono, "Enc:", "-1000", "ticks");
-        lv_triple(&l_io, 32, 34, &f_roboto, "IO:", "00000000", "");
-        lv_init_label(&l_symbol, 230, 50, &f_font_awesome_5_free, BROADCAST_TOWER, A_CENTER, true);
+        fill(0x20);
+        lv_init_label(&l_leda, 5, 24, &f_roboto_mono, "0", A_LEFT, true);
+        lv_init_label(&l_ledb, 20, 24, &f_roboto_mono, "0", A_LEFT, true);
+        lv_triple(&l_ticks, 40, 16, &f_roboto_mono, "Enc:", "-1000", "ticks");
+        lv_triple(&l_io, 40, 34, &f_roboto, "IO:", "00000000", "");
+        lv_init_label(&l_symbol, 230, 35, &f_font_awesome_5_free, "  ", A_CENTER, true);
     }
 
     unsigned events = get_event_flags();   // returns state of encoder and back button
@@ -55,7 +51,7 @@ void demo(void) {
         // Greyscale bar at the bottom
         set_draw_mode(DRAW_SET);
         for (int x = 0; x < FB_WIDTH; x += 8)
-            fill_rectangle(x, 55, x + 7, 63, (x / 8 - ticks));
+            fill_rectangle(x, 55, x + 7, 63, (x / 8 - ticks) << 4);
 
         if (is_left_led) {
             leda = (leda + diff) & 0x7;

@@ -15,4 +15,24 @@
 #define SWITCH_OPEN "\xef\xbf\xb0"
 #define THERMOMETER_FULL "\xef\x8b\x87"
 #define UNLOCK_ALT "\xef\x84\xbe"
+
+#define N_SYMBOLS 16
+static const char *all_symbols[] = {
+    BOLT,
+    BROADCAST_TOWER,
+    CHECK_CIRCLE,
+    CHECK_SQUARE,
+    CHEVRON_DOWN,
+    CHEVRON_UP,
+    CIRCLE,
+    MICROCHIP,
+    PLUG,
+    RESISTOR,
+    SQUARE,
+    SWITCH_CLOSED,
+    SWITCH_OPEN,
+    THERMOMETER_FULL,
+    UNLOCK_ALT,
+};
+
 #endif
