@@ -177,8 +177,7 @@ bool ui_board_poll(void) {
     poll_inputs();
 
     // Send a (partial) frame-buffer. One row of pixels per iteration
-    // This function is supposed to be non-blocking.
-    return send_partial_fb();
+    return send_window_4(0, 0, FB_WIDTH - 1, FB_HEIGHT - 1);
 }
 
 void ui_init(t_ui_board_type value) {
