@@ -141,11 +141,10 @@ static void poll_inputs(void) {
     enc_sum -= enc_table[(enc_d << 2) | enc];
 
     if (board_type == UI_BOARD_1U) {
-        // FIXME: this causes trouble on decrease on CMOD
-        // // Snap to the nearest multiple of 4 when resting at a mechanical detent
-        // if (enc == 0b11 || enc == 0b10) {
-        //     enc_sum = (enc_sum + 2) & ~3;
-        // }
+        // Force the LSBs of enc_sum to zero in a certain position
+        // To keep the mechanical detents aligned with enc_sum / 4
+        if (enc == 0b11)
+            enc_sum = enc_sum & ~3;
     }
 
     enc_d = enc;
@@ -162,23 +161,26 @@ bool ui_board_poll(void) {
         return false;
     }
 
-    // Write the MCP23 outputs (if needed)
-    if (led_a_value & 0x80) {
-        led_a_value &= 7;
-        mcp23_write8(MCP23_OLAT + 0x10, led_a_value);
-    }
-
-    if (led_b_value & 0x80) {
-        led_b_value &= 7;
-        // LEDB is connected to bit 4, 5, 6 of PORTA
-        mcp23_write8(MCP23_OLAT, (led_b_value << 4) | IO_OLED_RES_N);
-    }
-
     // Read the MCP23 inputs ...
     poll_inputs();
 
     // Send a (partial) frame-buffer. One row of pixels per iteration
-    return send_window_4(0, 0, FB_WIDTH - 1, FB_HEIGHT - 1);
+    bool is_done = send_window_4(0, 0, FB_WIDTH - 1, FB_HEIGHT - 1);
+
+    if (is_done) {
+        // Write the MCP23 outputs (once per frame, if needed)
+        if (led_a_value & 0x80) {
+            led_a_value &= 7;
+            mcp23_write8(MCP23_OLAT + 0x10, led_a_value);
+        }
+
+        if (led_b_value & 0x80) {
+            led_b_value &= 7;
+            // LEDB is connected to bit 4, 5, 6 of PORTA
+            mcp23_write8(MCP23_OLAT, (led_b_value << 4) | IO_OLED_RES_N);
+        }
+    }
+    return is_done;
 }
 
 void ui_init(t_ui_board_type value) {
