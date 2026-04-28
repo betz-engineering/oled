@@ -1,5 +1,5 @@
 // SOC-specific implementation of the definitions in hardware_interface.h
-#include "hardware_interface.h"
+#include <hardware_interface.h>
 #include "gpio.h"
 #include "irqs.h"
 #include "settings.h"

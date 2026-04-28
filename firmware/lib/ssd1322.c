@@ -124,7 +124,7 @@ bool send_window_4(int x1, int y1, int x2, int y2) {
         is_done = true;
     } else {
         // Send a single row to the OLED
-        uint8_t *p = &g_frameBuff[row * DISPLAY_WIDTH / 2 + x1_ * 2];
+        uint8_t *p = &framebuffer[row * FB_WIDTH / 2 + x1_ * 2];
         // Each column contains 4 pixels = 2 bytes
         unsigned len = (x2_ - x1_ + 1) * 2;  // [bytes]
         ui_set_cs_n(SELECT_OLED);

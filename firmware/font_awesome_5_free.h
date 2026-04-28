@@ -146,7 +146,7 @@ static const glyph_description_t glyph_dsc_font_awesome_5_free[15] = {
     {.width = 38, .height = 16, .lsb = -1, .tsb = 14, .advance = 36, .start_index = 2477, },  // U+FFF2 '￲'
 };
 
-static const unsigned code_points_font_awesome_5_free[14] = {
+static const uint32_t code_points_font_awesome_5_free[14] = {
  61559, 61560, 61640, 61671, 61713, 61758, 61770, 61926, 62151, 62171, 62745, 65520, 65521, 65522
 };
 

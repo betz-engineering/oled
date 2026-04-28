@@ -1,9 +1,9 @@
 #include "demo.h"
 #include "frame_buffer.h"
 #include "gpio.h"
-#include "hardware_interface.h"
+#include <hardware_interface.h>
 #include "irqs.h"
-#include "lv_font.h"
+#include "font.h"
 #include "print.h"
 #include "settings.h"
 #include "spi.h"
