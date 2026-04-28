@@ -72,7 +72,7 @@ int main(void) {
     SET_GPIO1(IO_GPIO, GPIO_OUT_REG, IO_RSTN, 1);
     DELAY_MS(1);
 
-    ui_init(UI_BOARD);
+    ui_init(UI_BOARD_1U);
 
     printf("Hi, this is UI_BOARD demo on CMODA7\n");
 

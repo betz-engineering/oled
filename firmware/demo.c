@@ -23,7 +23,7 @@ void demo(void) {
 
     if (frm == 0) {
         printf("Clearing the screen and re-initializing\n");
-        fill(0x20);
+        fill(0);
         lv_init_label(&l_leda, 5, 24, &f_roboto_mono, "0", A_LEFT, true);
         lv_init_label(&l_ledb, 20, 24, &f_roboto_mono, "0", A_LEFT, true);
         lv_triple(&l_ticks, 40, 16, &f_roboto_mono, "Enc:", "-1000", "ticks");

@@ -141,10 +141,11 @@ static void poll_inputs(void) {
     enc_sum -= enc_table[(enc_d << 2) | enc];
 
     if (board_type == UI_BOARD_1U) {
-        // Snap to the nearest multiple of 4 when resting at a mechanical detent
-        if (enc == 0b11 || enc == 0b10) {
-            enc_sum = (enc_sum + 2) & ~3;
-        }
+        // FIXME: this causes trouble on decrease on CMOD
+        // // Snap to the nearest multiple of 4 when resting at a mechanical detent
+        // if (enc == 0b11 || enc == 0b10) {
+        //     enc_sum = (enc_sum + 2) & ~3;
+        // }
     }
 
     enc_d = enc;
