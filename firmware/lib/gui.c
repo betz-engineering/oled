@@ -14,23 +14,13 @@
 // draw = if true, also draw the init string to the framebuffer
 // use lv_update_label to change the label content
 void lv_init_label(
-    t_label *lbl, int x, int y, const font_header_t *fnt, const char *init, t_align a, bool draw) {
-    int left = 0, right = 0, top = 0, bottom = 0;
-    init_from_header(fnt);
-    fnt_get_bb(init, 64, a, &left, &right, &top, &bottom);
+    t_label *lbl, int x, int y, const font_header_t *fnt, const char *init, fnt_align_t a, bool draw) {
     lbl->fnt = fnt;
-    lbl->align = a;
     lbl->x = x;
     lbl->y = y;
-    lbl->x0 = x + left - 2;
-    lbl->x1 = x + right + 1;
-    lbl->y0 = y + top - 2;
-    lbl->y1 = y + bottom + 1;
-    if (a == A_RIGHT_REF_LEFT) {
-        // x, y anchor on the left but aligned right
-        lbl->x += right;
-        lbl->align = A_RIGHT;
-    }
+    lbl->align = a;
+    fnt_init_from_header(fnt);
+    lbl->bb = fnt_measure_text(x, y, init, 64, lbl->align);
     if (draw)
         lv_update_label(lbl, init);
 }
@@ -47,27 +37,29 @@ void lv_update_labelf(t_label *lbl, const char *format, ...) {
 
 void lv_border(t_label *lbl) {
     set_draw_mode(DRAW_ADD);
-    draw_rectangle(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0xFF);  // show bb
+    draw_rectangle(lbl->bb.left - 1, lbl->bb.top - 1, lbl->bb.right + 1, lbl->bb.bottom + 1, 0xFF);  // show bb
 }
 
 void lv_update_label(t_label *lbl, const char *buf) {
     set_draw_mode(DRAW_SET);
-    fill_rectangle(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0x00);
-    // draw_rectangle(lbl->x0, lbl->y0, lbl->x1, lbl->y1, 0xFF);  // show bb
+    fill_rectangle(lbl->bb.left - 1, lbl->bb.top - 1, lbl->bb.right + 1, lbl->bb.bottom + 1, 0);
 
     set_draw_mode(DRAW_ADD);
-    init_from_header(lbl->fnt);
-    set_draw_region(lbl->x0, lbl->y0, lbl->x1, lbl->y1);
-    push_str(lbl->x, lbl->y, buf, 64, lbl->align);
+    fnt_init_from_header(lbl->fnt);
+    set_draw_region(lbl->bb.left - 1, lbl->bb.top - 1, lbl->bb.right + 1, lbl->bb.bottom + 1);
+    fnt_draw_text(lbl->x, lbl->y, buf, 64, lbl->align);
     set_draw_region_full();
 }
 
 void lv_triple(
     t_label *nmb, int x, int y, const font_header_t *fnt, const char *a, const char *b, const char *c) {
-    t_label tmp;
-    lv_init_label(&tmp, x, y, fnt, a, A_LEFT, true);
-    lv_init_label(nmb, tmp.x1 + 4, y, fnt, b, A_RIGHT_REF_LEFT, false);
-    lv_init_label(&tmp, nmb->x1 + 4, y, fnt, c, A_LEFT, true);
+    t_label tmp = {0};
+    if (a != NULL)
+        lv_init_label(&tmp, x, y, fnt, a, H_LEFT, true);
+    if (b != NULL)
+        lv_init_label(nmb, tmp.bb.right + 4, y, fnt, b, H_LEFT, false);
+    if (c != NULL)
+        lv_init_label(&tmp, nmb->bb.right + 4, y, fnt, c, H_LEFT, true);
 }
 
 void lv_update_label_dp(t_label *lbl, int32_t val, const uint8_t n, const uint8_t dp) {

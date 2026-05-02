@@ -8,14 +8,12 @@
 //-----------------------------------------------
 typedef struct {
     // text origin
-    int16_t x;
-    int16_t y;
+    int x;
+    int y;
+    fnt_align_t align;
     // clip window
-    int16_t x0;
-    int16_t y0;
-    int16_t x1;
-    int16_t y1;
-    t_align align;
+    fnt_bbox_t bb;
+    // font
     const font_header_t *fnt;
 } t_label;
 
@@ -29,7 +27,7 @@ typedef struct {
 // a:       text alignment __AND__ anchor point position
 // draw:    if true, also draw the init string to the framebuffer
 void lv_init_label(
-    t_label *lbl, int x, int y, const font_header_t *fnt, const char *init, t_align a, bool draw);
+    t_label *lbl, int x, int y, const font_header_t *fnt, const char *init, fnt_align_t a, bool draw);
 
 // Update the text in a label
 void lv_update_label(t_label *lbl, const char *buf);

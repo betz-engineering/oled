@@ -24,11 +24,11 @@ void demo(void) {
     if (frm == 0) {
         printf("Clearing the screen and re-initializing\n");
         fill(0);
-        lv_init_label(&l_leda, 5, 24, &f_roboto_mono, "0", A_LEFT, true);
-        lv_init_label(&l_ledb, 20, 24, &f_roboto_mono, "0", A_LEFT, true);
+        lv_init_label(&l_leda, 5, 24, &f_roboto_mono, "0", H_LEFT, true);
+        lv_init_label(&l_ledb, 20, 24, &f_roboto_mono, "0", H_LEFT, true);
         lv_triple(&l_ticks, 40, 16, &f_roboto_mono, "Enc:", "-1000", "ticks");
-        lv_triple(&l_io, 40, 34, &f_roboto, "IO:", "00000000", "");
-        lv_init_label(&l_symbol, 230, 35, &f_font_awesome_5_free, "  ", A_CENTER, true);
+        lv_triple(&l_io, 40, 34, &f_roboto, "IO:", "00000000", NULL);
+        lv_init_label(&l_symbol, 230, 35, &f_font_awesome_5_free, "  ", H_MIDDLE, true);
     }
 
     unsigned events = get_event_flags();   // returns state of encoder and back button
