@@ -10,14 +10,21 @@ typedef enum { UI_BOARD, UI_BOARD_1U } t_ui_board_type;
 
 // Meaning of the bits in the value returned by get_button_flags()
 // It indicates which events happened since the last call
-#define EV_ENC (1 << 0)       // Current state of the encoder knob (1 = pushed)
-#define EV_BACK (1 << 1)      // Current state of the back button (1 = pushed)
-#define EV_ENC_S (1 << 4)     // A short push and release of the encoder knob happened
-#define EV_BACK_S (1 << 5)    // A short push and release of the back button happened
-#define EV_ENC_L (1 << 8)     // A long push and release of the encoder knob happened
-#define EV_BACK_L (1 << 9)    // A long push and release of the back button happened
-#define EV_ROT_CCW (1 << 12)  // The encoder was rotated one step counter-clockwise
-#define EV_ROT_CW (1 << 13)   // The encoder was rotated one step clockwise
+// Instantaneous value (1 = pushed)
+#define EV_ENC (1 << 0)   // encoder button
+#define EV_BACK (1 << 1)  // back button
+// On push
+#define EV_ENC_P (1 << 4)
+#define EV_BACK_P (1 << 5)
+// Short push and release
+#define EV_ENC_S (1 << 8)
+#define EV_BACK_S (1 << 9)
+// Long push and release
+#define EV_ENC_L (1 << 12)
+#define EV_BACK_L (1 << 13)
+// Encoder ticks. Alternative to get_encoder_ticks()
+#define EV_ROT_CCW (1 << 16)
+#define EV_ROT_CW (1 << 17)
 
 // Call this once to initialize the ui_board
 // before calling this:

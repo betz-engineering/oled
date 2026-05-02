@@ -80,7 +80,7 @@ static uint8_t mcp23_read8(uint8_t addr) {
 }
 
 static void poll_inputs(void) {
-    static unsigned cycle_enc_sw = 0, cycle_back_sw = 0;
+    static unsigned push_cycles[2], last_buttons = 0;
     static bool is_initialized = false;
     static int8_t enc_d = 0;
 
@@ -97,44 +97,47 @@ static void poll_inputs(void) {
     // read the current encoder state
     int8_t enc = (val >> 1) & 3;
 
+    // extract button values
+    unsigned buttons = 0;
+    if ((val & IO_ENC_SW) == 0)
+        buttons |= 1;
+    if ((val & IO_BACK_SW) == 0)
+        buttons |= 2;
+
     // Don't send any events in the first iteration
     if (!is_initialized) {
         gpio_state = val;
         enc_d = enc;
+        last_buttons = buttons;
         is_initialized = true;
         return;
     }
 
-    // decode buttons states (rising or falling edge of the input signal)
-    unsigned rising = (~gpio_state) & val;
-    unsigned falling = gpio_state & (~val);
-
-    // On button push, latch the current cycle count
-    if (falling & IO_ENC_SW)
-        cycle_enc_sw = cycles;
-    if (falling & IO_BACK_SW)
-        cycle_back_sw = cycles;
-
-    // Set instantaneous button state in [1, 0]
+    // Set instantaneous button state in bits 0x00F
     event_flags &= ~0xF;
-    if (!(val & IO_ENC_SW))
-        event_flags |= 1;
-    if (!(val & IO_BACK_SW))
-        event_flags |= 2;
+    event_flags |= buttons;
 
-    // On release, check if it was a long [9, 8] or a short press [5, 4]
-    // and set the bits in event_flags accordingly
-    if (rising & IO_ENC_SW) {
-        if ((cycles - cycle_enc_sw) > ui_t_long_press)
-            event_flags |= 1 << 8;
-        else
-            event_flags |= 1 << 4;
-    }
-    if (rising & IO_BACK_SW) {
-        if ((cycles - cycle_back_sw) > ui_t_long_press)
-            event_flags |= 2 << 8;
-        else
-            event_flags |= 2 << 4;
+    // decode buttons states (rising or falling edges)
+    unsigned rising = (~last_buttons) & buttons;
+    unsigned falling = last_buttons & (~buttons);
+    last_buttons = buttons;
+
+    for (int i = 0; i < 2; i++) {
+        if (rising & (1 << i)) {
+            // On button push, latch the current cycle count
+            event_flags |= EV_ENC_P << i;
+            push_cycles[i] = cycles;
+        } else if (push_cycles[i] > 0) {
+            if (falling & (1 << i)) {
+                // On button release, fire a short-press event
+                event_flags |= EV_ENC_S << i;
+                push_cycles[i] = 0;
+            } else if ((cycles - push_cycles[i]) >= ui_t_long_press) {
+                // On timeout, fire a long-press event
+                event_flags |= EV_ENC_L << i;
+                push_cycles[i] = 0;
+            }
+        }
     }
 
     // Decode current and previous encoder state with a 4 bit lookup table, accumulate steps
@@ -142,7 +145,7 @@ static void poll_inputs(void) {
 
     if (board_type == UI_BOARD_1U) {
         // Force the LSBs of enc_sum to zero in a certain position
-        // To keep the mechanical detents aligned with enc_sum / 4
+        // This keeps the mechanical detents aligned with enc_sum / 4
         if (enc == 0b11)
             enc_sum = enc_sum & ~3;
     }
