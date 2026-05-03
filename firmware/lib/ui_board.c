@@ -146,7 +146,7 @@ static void poll_inputs(void) {
     if (board_type == UI_BOARD_1U) {
         // Force the LSBs of enc_sum to zero in a certain position
         // This keeps the mechanical detents aligned with enc_sum / 4
-        if (enc == 0b11)
+        if (enc == 3)
             enc_sum = enc_sum & ~3;
     }
 
