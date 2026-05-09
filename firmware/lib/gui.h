@@ -75,9 +75,6 @@ void lv_triple(
 #define DISPLAY_WIDTH  FB_WIDTH
 #define DISPLAY_HEIGHT  FB_HEIGHT
 
-// Set whole screen to fixed shade
-void fill(uint8_t shade);
-
 // Draw a rectangle from (x1, y1) to (x2, y2)
 void fillRect(int x1, int y1, int x2, int y2, uint8_t shade);
 

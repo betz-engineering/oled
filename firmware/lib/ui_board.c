@@ -83,45 +83,58 @@ static void poll_inputs(void) {
     static unsigned push_cycles[2], last_buttons = 0;
     static bool is_initialized = false;
     static int8_t enc_d = 0;
-
-    // We can return early if no pins have changed on the MCP23
-    if (!ui_get_int())
-        return;
+    unsigned rising = 0, falling = 0;
 
     // Read clock cycle counter
     unsigned cycles = ui_get_cycles();
 
-    // Read the MCP23 IO pin state (PORTA only)
-    const unsigned val = mcp23_read8(MCP23_GPIO);
+    // We can skip the SPI read if no pins have changed on the MCP23
+    if (ui_get_int()) {
+        // Read the MCP23 IO pin state (PORTA only)
+        const unsigned val = mcp23_read8(MCP23_GPIO);
+        // read the current encoder state
+        int8_t enc = (val >> 1) & 3;
 
-    // read the current encoder state
-    int8_t enc = (val >> 1) & 3;
+        // extract button values
+        unsigned buttons = 0;
+        if ((val & IO_ENC_SW) == 0)
+            buttons |= 1;
+        if ((val & IO_BACK_SW) == 0)
+            buttons |= 2;
 
-    // extract button values
-    unsigned buttons = 0;
-    if ((val & IO_ENC_SW) == 0)
-        buttons |= 1;
-    if ((val & IO_BACK_SW) == 0)
-        buttons |= 2;
+        // Don't send any events in the first iteration
+        if (!is_initialized) {
+            gpio_state = val;
+            enc_d = enc;
+            last_buttons = buttons;
+            is_initialized = true;
+            return;
+        }
 
-    // Don't send any events in the first iteration
-    if (!is_initialized) {
-        gpio_state = val;
-        enc_d = enc;
+        // Set instantaneous button state in bits 0x00F
+        event_flags &= ~0xF;
+        event_flags |= buttons;
+
+        // decode buttons states (rising or falling edges)
+        rising = (~last_buttons) & buttons;
+        falling = last_buttons & (~buttons);
         last_buttons = buttons;
-        is_initialized = true;
-        return;
+
+        // Decode current and previous encoder state with a 4 bit lookup table, accumulate steps
+        enc_sum -= enc_table[(enc_d << 2) | enc];
+
+        if (board_type == UI_BOARD_1U) {
+            // Force the LSBs of enc_sum to zero in a certain position
+            // This keeps the mechanical detents aligned with enc_sum / 4
+            if (enc == 3)
+                enc_sum = enc_sum & ~3;
+        }
+
+        enc_d = enc;
+        gpio_state = val;
     }
 
-    // Set instantaneous button state in bits 0x00F
-    event_flags &= ~0xF;
-    event_flags |= buttons;
-
-    // decode buttons states (rising or falling edges)
-    unsigned rising = (~last_buttons) & buttons;
-    unsigned falling = last_buttons & (~buttons);
-    last_buttons = buttons;
-
+    // Long / short push logic
     for (int i = 0; i < 2; i++) {
         if (rising & (1 << i)) {
             // On button push, latch the current cycle count
@@ -139,26 +152,13 @@ static void poll_inputs(void) {
             }
         }
     }
-
-    // Decode current and previous encoder state with a 4 bit lookup table, accumulate steps
-    enc_sum -= enc_table[(enc_d << 2) | enc];
-
-    if (board_type == UI_BOARD_1U) {
-        // Force the LSBs of enc_sum to zero in a certain position
-        // This keeps the mechanical detents aligned with enc_sum / 4
-        if (enc == 0b11)
-            enc_sum = enc_sum & ~3;
-    }
-
-    enc_d = enc;
-    gpio_state = val;
 }
 
 // if the highest bit is set, the value shall be written to the MCP in the next call to
 // ui_board_poll()
 static uint8_t led_a_value = 0, led_b_value = 0;
 
-bool ui_board_poll(void) {
+bool ui_board_poll(bool new_frame) {
     // A non-blocking SPI transfer is still in progress, can't do anything for now
     if (ui_spi_is_busy()) {
         return false;
@@ -167,10 +167,10 @@ bool ui_board_poll(void) {
     // Read the MCP23 inputs ...
     poll_inputs();
 
-    // Send a (partial) frame-buffer. One row of pixels per iteration
-    bool is_done = send_window_4(0, 0, FB_WIDTH - 1, FB_HEIGHT - 1);
+    // Send another row, if a transfer is in progress
+    bool is_done = send_window_4(-1, -1, -1, -1);
 
-    if (is_done) {
+    if (is_done && new_frame) {
         // Write the MCP23 outputs (once per frame, if needed)
         if (led_a_value & 0x80) {
             led_a_value &= 7;
@@ -182,6 +182,9 @@ bool ui_board_poll(void) {
             // LEDB is connected to bit 4, 5, 6 of PORTA
             mcp23_write8(MCP23_OLAT, (led_b_value << 4) | IO_OLED_RES_N);
         }
+
+        // Start sending the frame-buffer. One row of pixels per iteration
+        is_done = send_window_4(0, 0, FB_WIDTH - 1, FB_HEIGHT - 1);
     }
     return is_done;
 }

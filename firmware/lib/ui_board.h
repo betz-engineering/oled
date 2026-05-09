@@ -47,7 +47,9 @@ unsigned get_event_flags(void);
 //   * sends the frame-buffer if it was changed (one row per call)
 // returns false when the framebuffer is currently being sent to the OLED.
 // to avoid glitches, only draw to the framebuffer after it returns true.
-bool ui_board_poll(void);
+// set new_frame to false to avoid starting the next framebuffer transmission. Useful
+// if nothing changed in the framebuffer for example.
+bool ui_board_poll(bool new_frame);
 
 // # Set the LED status, bits of rgb_value are {B, G, R}
 void set_leda(unsigned rgb_value);
