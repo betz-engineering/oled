@@ -6,13 +6,24 @@
 //-----------------------------------------------
 // Dirty GUI stuff
 //-----------------------------------------------
+// this is all for legacy compatibility with Marble-MMC.
+// New developments shall use font_lib directly.
+
+// Horizontal alignment
+typedef enum {
+       LV_LEFT = H_LEFT,
+       LV_CENTER = H_MIDDLE,
+       LV_RIGHT = H_RIGHT,
+       LV_RIGHT_REF_LEFT = 0xF0
+} t_align;
+
 typedef struct {
     // text origin
     int x;
     int y;
     fnt_align_t align;
     // clip window
-    fnt_bbox_t bb;
+    bbox_t bb;
     // font
     const font_header_t *fnt;
 } t_label;
@@ -27,7 +38,7 @@ typedef struct {
 // a:       text alignment __AND__ anchor point position
 // draw:    if true, also draw the init string to the framebuffer
 void lv_init_label(
-    t_label *lbl, int x, int y, const font_header_t *fnt, const char *init, fnt_align_t a, bool draw);
+    t_label *lbl, int x, int y, const font_header_t *fnt, const char *init, t_align a, bool draw);
 
 // Update the text in a label
 void lv_update_label(t_label *lbl, const char *buf);
@@ -56,5 +67,24 @@ void lv_border(t_label *lbl);
 // x, y:    position of anchor point on the top left
 void lv_triple(
     t_label *nmb, int x, int y, const font_header_t *fnt, const char *a, const char *b, const char *c);
+
+
+// Compatibility layer between the old graphics functions and font_lib
+
+#define LV_BPP FB_BPP
+#define DISPLAY_WIDTH  FB_WIDTH
+#define DISPLAY_HEIGHT  FB_HEIGHT
+
+// Set whole screen to fixed shade
+void fill(uint8_t shade);
+
+// Draw a rectangle from (x1, y1) to (x2, y2)
+void fillRect(int x1, int y1, int x2, int y2, uint8_t shade);
+
+void rect(int x0, int x1, int y0, int y1, uint8_t shade);
+void emptyRoundedRect(int x1, int y1, int x2, int y2, int radius, int thickness);
+
+void invertRect(int x1, int y1, int x2, int y2);
+void invertRoundedRect(int x1, int y1, int x2, int y2, int radius);
 
 #endif

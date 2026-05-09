@@ -8,7 +8,7 @@
 // Select the flavor at runtime when calling ui_init();
 typedef enum { UI_BOARD, UI_BOARD_1U } t_ui_board_type;
 
-// Meaning of the bits in the value returned by get_button_flags()
+// Meaning of the bits in the value returned by get_event_flags()
 // It indicates which events happened since the last call
 // Instantaneous value (1 = pushed)
 #define EV_ENC (1 << 0)   // encoder button
