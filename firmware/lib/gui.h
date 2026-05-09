@@ -7,7 +7,7 @@
 // Dirty GUI stuff
 //-----------------------------------------------
 // this is all for legacy compatibility with Marble-MMC.
-// New developments shall use font_lib directly.
+// New developments should rather use font_lib directly.
 
 // Horizontal alignment
 typedef enum {

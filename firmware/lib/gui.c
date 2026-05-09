@@ -15,6 +15,7 @@
 // use lv_update_label to change the label content
 void lv_init_label(
     t_label *lbl, int x, int y, const font_header_t *fnt, const char *init, t_align a, bool draw) {
+    y += 1;  // too bad
     lbl->fnt = fnt;
     lbl->x = x;
     lbl->y = y;
@@ -22,9 +23,9 @@ void lv_init_label(
     // special case: x, y refers the the left side but text in label is right-aligned
     // measure the width of the BB while text is left-aligned
     if (a == LV_RIGHT_REF_LEFT)
-        lbl->align = H_LEFT;
+        lbl->align = H_LEFT | V_TOP;
     else
-        lbl->align = (fnt_align_t)a;
+        lbl->align = (fnt_align_t)a | V_TOP;
 
     fnt_init_from_header(fnt);
     lbl->bb = fnt_measure_text(x, y, init, 64, lbl->align);
@@ -32,7 +33,7 @@ void lv_init_label(
     // Then keep the BB but move the anchor point and alignment to the right edge
     if (a == LV_RIGHT_REF_LEFT){
         lbl->x = lbl->bb.right;
-        lbl->align = H_RIGHT;
+        lbl->align = H_RIGHT | V_TOP;
     }
 
     if (draw)
@@ -109,30 +110,31 @@ void lv_update_label_bin(t_label *lbl, uint32_t val, uint8_t nDigits) {
     lv_update_label(lbl, buf);
 }
 
-// Draw a rectangle from (x1, y1) to (x2, y2)
-void fillRect(int x1, int y1, int x2, int y2, uint8_t shade) {
+void fillRect(int x0, int x1, int y0, int y1, uint8_t shade) {
     set_draw_mode(DRAW_SET);
-    fill_rectangle(x1, y1, x2, y2, shade << 8);
+    fill_rectangle(x0, y0, x1, y1, shade << 8);
 }
 
 void rect(int x0, int x1, int y0, int y1, uint8_t shade) {
     set_draw_mode(DRAW_SET);
-    draw_rectangle(x0, y0, x1, y1, shade << 8);
+    draw_rectangle(x0, y0, x1 - 1, y1 - 1, shade << 8);
 }
 
 // Draw empty (outline) rounded rectangle with specified thickness
 void emptyRoundedRect(int x1, int y1, int x2, int y2, int radius, int thickness) {
     (void)thickness;
     set_draw_mode(DRAW_ADD);
-    draw_rectangle_r(x1, y1, x2, y2, radius, 0xFF);
+    draw_rectangle_r(x1, y1, x2 - 1, y2 - 1, radius, 0xFF);
 }
 
-void invertRect(int x1, int y1, int x2, int y2) {
+// Invert all pixels in rectangle
+void invertRect(int x0, int x1, int y0, int y1) {
     set_draw_mode(DRAW_INV);
-    fill_rectangle(x1, y1, x2, y2, 0xFF);
+    fill_rectangle(x0, y0, x1 - 1, y1 - 1, 0xFF);
 }
 
+// Invert all pixels in rectangle with rounded corners, with AA shading
 void invertRoundedRect(int x1, int y1, int x2, int y2, int radius) {
     set_draw_mode(DRAW_INV);
-    fill_rectangle_r(x1, y1, x2, y2, radius, 0xFF);
+    fill_rectangle_r(x1, y1, x2 - 1, y2 - 1, radius, 0xFF);
 }
