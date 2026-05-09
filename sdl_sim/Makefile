@@ -9,6 +9,7 @@ CFLAGS += -Wall -DSDL_SIM -g
 CFLAGS += -DFB_WIDTH=256 -DFB_HEIGHT=64 -DFB_BPP=4 -DDEBUG=1
 
 OBJS = frame_buffer.o font.o graphics.o print.o demo.o gui.o
+OBJS += font_awesome_5_free.o roboto.o roboto_mono.o
 
 all: test
 

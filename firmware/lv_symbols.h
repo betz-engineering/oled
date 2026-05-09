@@ -35,4 +35,8 @@ static const char *all_symbols[] = {
     UNLOCK_ALT,
 };
 
+extern const font_header_t f_font_awesome_5_free;
+extern const font_header_t f_roboto;
+extern const font_header_t f_roboto_mono;
+
 #endif
