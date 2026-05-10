@@ -60,6 +60,19 @@ static t_ui_board_type board_type = UI_BOARD;
 // 4 bit lookup table for Gray-code transitions
 static const int8_t enc_table[16] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
 
+// Optional, only needed if interrupts are used
+__attribute__((weak)) void ui_set_int_enabled(bool val) { (void)val; }
+
+// Default implementation for blocking SPI transmission of the chunk (1 row of the framebuffer)
+__attribute__((weak)) void ui_spi_tx_chunk(uint8_t *buf, unsigned len) {
+    while (len--)
+        ui_spi_rx_tx(*buf++);
+    ui_set_cs_n(SELECT_NONE);
+}
+
+// By default blocking transfers are used, so it can never be busy.
+__attribute__((weak)) bool ui_spi_is_busy(void) { return false; }
+
 // Write a 8 bit register
 static void mcp23_write8(uint8_t addr, uint8_t val) {
     ui_set_cs_n(SELECT_MCP);
@@ -79,16 +92,24 @@ static uint8_t mcp23_read8(uint8_t addr) {
     return tmp;
 }
 
-static void poll_inputs(void) {
+void mcp23_isr(void) {
     static unsigned push_cycles[2], last_buttons = 0;
     static bool is_initialized = false;
     static int8_t enc_d = 0;
     unsigned rising = 0, falling = 0;
 
+    // disable MCP23 interrupt pin (important if called from main)
+    ui_set_int_enabled(false);
+
+    // A non-blocking SPI transfer is still in progress, can't do anything for now.
+    // I'll rely on the user to call mcp23_isr() when the background transfer is finished.
+    if (ui_spi_is_busy())
+        return;
+
     // Read clock cycle counter
     unsigned cycles = ui_get_cycles();
 
-    // We can skip the SPI read if no pins have changed on the MCP23
+    // We can skip the SPI read if no pins have changed on the MCP23 (if called from main)
     if (ui_get_int()) {
         // Read the MCP23 IO pin state (PORTA only)
         const unsigned val = mcp23_read8(MCP23_GPIO);
@@ -108,6 +129,7 @@ static void poll_inputs(void) {
             enc_d = enc;
             last_buttons = buttons;
             is_initialized = true;
+            ui_set_int_enabled(true);
             return;
         }
 
@@ -152,6 +174,7 @@ static void poll_inputs(void) {
             }
         }
     }
+    ui_set_int_enabled(true);
 }
 
 // if the highest bit is set, the value shall be written to the MCP in the next call to
@@ -159,18 +182,20 @@ static void poll_inputs(void) {
 static uint8_t led_a_value = 0, led_b_value = 0;
 
 bool ui_board_poll(bool new_frame) {
-    // A non-blocking SPI transfer is still in progress, can't do anything for now
-    if (ui_spi_is_busy()) {
-        return false;
-    }
-
     // Read the MCP23 inputs ...
-    poll_inputs();
+    mcp23_isr();
+
+    // Get exclusive access to the SPI
+    ui_set_int_enabled(false);
+
+    // A non-blocking SPI transfer is still in progress, can't do anything for now
+    if (ui_spi_is_busy())
+        return false;
 
     // Send another row, if a transfer is in progress
     bool is_done = send_window_4(-1, -1, -1, -1);
 
-    if (is_done && new_frame) {
+    if (is_done) {
         // Write the MCP23 outputs (once per frame, if needed)
         if (led_a_value & 0x80) {
             led_a_value &= 7;
@@ -183,9 +208,13 @@ bool ui_board_poll(bool new_frame) {
             mcp23_write8(MCP23_OLAT, (led_b_value << 4) | IO_OLED_RES_N);
         }
 
-        // Start sending the frame-buffer. One row of pixels per iteration
-        is_done = send_window_4(0, 0, FB_WIDTH - 1, FB_HEIGHT - 1);
+        // Restart transmission of the frame-buffer. One row of pixels per iteration
+        if (new_frame)
+            is_done = send_window_4(0, 0, FB_WIDTH - 1, FB_HEIGHT - 1);
     }
+
+    // Re-enable listening to MCP23 pin-changes
+    ui_set_int_enabled(true);
     return is_done;
 }
 

@@ -19,7 +19,7 @@ typedef enum { UI_BOARD, UI_BOARD_1U } t_ui_board_type;
 // Short push and release
 #define EV_ENC_S (1 << 8)
 #define EV_BACK_S (1 << 9)
-// Long push and release
+// Long push
 #define EV_ENC_L (1 << 12)
 #define EV_BACK_L (1 << 13)
 // Encoder ticks. Alternative to get_encoder_ticks()
@@ -32,6 +32,22 @@ typedef enum { UI_BOARD, UI_BOARD_1U } t_ui_board_type;
 //   * Set the RESET pin low for 1 ms, then high and wait another 1 ms
 void ui_init(t_ui_board_type value);
 
+// Call this in the main loop. If interrupts are used: > 10 Hz, otherwise > 500 Hz
+// for each call, it:
+//   * reads the inputs (including the encoder quadrature signals)
+//   * sends pixel data to the OLED (one row per call)
+//   * updates the LEDs (once per frame)
+// returns true when every row of the framebuffer has been sent to the OLED.
+// To avoid glitches, only draw to the framebuffer after it returns true.
+// Set new_frame to false to avoid starting the next framebuffer transmission.
+// Useful to keep the SPI bus quiet if no pixels have been modified.
+bool ui_board_poll(bool new_frame);
+
+// Optional: call this on the rising edge of the MCP23Sxx INT pin. It will read the inputs only.
+// When using background transfers for ui_spi_tx_chunk(), also call this when the
+// ui_spi_tx_chunk() transfer is finished.
+void mcp23_isr(void);
+
 // if reset is true, returns number of encoder ticks (and direction) since last call
 // if reset is false, returns accumulated encoder ticks
 int get_encoder_ticks(bool reset);
@@ -39,17 +55,6 @@ int get_encoder_ticks(bool reset);
 // returns the instantaneous state of the encoder and back button (in the 2 LSBs)
 // the other bits are used to indicate events. See the EV_ flags above.
 unsigned get_event_flags(void);
-
-// Call this in a tight loop.
-// for each call, it:
-//   * updates the LEDs
-//   * reads the inputs (including the encoder)
-//   * sends the frame-buffer if it was changed (one row per call)
-// returns false when the framebuffer is currently being sent to the OLED.
-// to avoid glitches, only draw to the framebuffer after it returns true.
-// set new_frame to false to avoid starting the next framebuffer transmission. Useful
-// if nothing changed in the framebuffer for example.
-bool ui_board_poll(bool new_frame);
 
 // # Set the LED status, bits of rgb_value are {B, G, R}
 void set_leda(unsigned rgb_value);
